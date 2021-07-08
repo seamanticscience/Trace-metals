@@ -250,4 +250,4 @@ N_1_to_3 = 30*rho_0*10**(-6)
     # After proper conversions, the above essentially represents N_1 to N_3, with units of 
     # mol per cubic meter.
     
-transport_model_info = create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, 0.001, 10, 'Concentrations of N_1, N_2, and N_3 w/ exports, dt = 0.001', 'N',  3*10**-7, 3*10**-8)
+transport_model_info = create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, 0.001, 10, 'Concentrations of N_1, N_2, and N_3 w/ exports, dt = 0.001', 'N',  3*10**-8, 3*10**-7)
