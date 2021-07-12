@@ -19,11 +19,17 @@ k_32 = 1.0*10**6
 k_12 = 10.0*10**6
 k_21 = 10.0*10**6
 rho_0 = 1024.5 #Units of kg per cubic meter, density of water
+V_max = ((16*6*10**-3)/(360*86400)) # Units of mol N m-3 s-1
+K_sat_N = 1.6*10**-3 #Units of 1.6e-3, mol N m-3
+K_sat_l = 30 #Units of W m-2
+Ibox1 = 35 #Units of W m-2
+Ibox2 = 60 #Units of W m-2
 
 ## The following functions abstract the process of creating the transport model
 ## (using the ODEs we have generalized to the system).
 
-def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_symbol, lambda_1 = 0, lambda_2 = 0):
+def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_symbol, lambda_1 = 0, lambda_2 = 0, \
+                           mic_ment_nolight = 0, mic_ment_light_leibig = 0, mic_ment_light_mult_lim = 0):
     """
     Uses first order ODEs to characterize the time dependence of the concentration(s)
     in the three boxes (of fixed dimension).
@@ -38,6 +44,11 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
         element_symbol: element to be considered (e.g. N for nitrogen) (str)
         lambda_1, lambda_2: float, rate coefficient relating consumption and export
             (s**-1). Set to 0 by default unless specified. 
+        mic_ment_nolight: int (0 or 1) where 1 means we are using the Michaelis–Menten model without considering light.
+        mic_ment_light_leibig: int (0 or 1) where 1 means we are using the Michaelis–Menten model with light limitation
+            and Leibig's law.
+        mic_ment_light_mult_lim: int (0 or 1) where 1 means we are using the Michaelis–Menten model with light limitation
+            and multiplicative limitation.
 
     Returns
     -------
@@ -99,7 +110,12 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
         rates and the concentrations at the given times.
     
         """
-        return (psi*(C_3 - C_1) + k_31*(C_3 - C_1) + k_21*(C_2 - C_1))/vol_1 - lambda_1*C_1
+        light_dependent_change_in_C_1 = (Ibox1/(K_sat_l + Ibox1))
+        nutrient_dependent_change_in_C_1 = ((C_1)/(K_sat_N + C_1))
+        return (psi*(C_3 - C_1) + k_31*(C_3 - C_1) + k_21*(C_2 - C_1))/vol_1 - lambda_1*C_1 \
+            - mic_ment_nolight*(V_max/10)*((C_1)/(K_sat_N + C_1)) \
+                - mic_ment_light_leibig*V_max*min(light_dependent_change_in_C_1, nutrient_dependent_change_in_C_1) \
+                    - mic_ment_light_mult_lim*V_max*light_dependent_change_in_C_1*nutrient_dependent_change_in_C_1
     
     def dC_2_over_dt():
         """
@@ -115,7 +131,12 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
         rates and the concentrations at the given times.
     
         """
-        return (psi*(C_1 - C_2) + k_12*(C_1 - C_2) + k_32*(C_3 - C_2))/vol_2 - lambda_2*C_2
+        light_dependent_change_in_C_2 = (Ibox2/(K_sat_l + Ibox2))
+        nutrient_dependent_change_in_C_2 = ((C_2)/(K_sat_N + C_2))
+        return (psi*(C_1 - C_2) + k_12*(C_1 - C_2) + k_32*(C_3 - C_2))/vol_2 - lambda_2*C_2 \
+            - mic_ment_nolight*V_max*((C_2)/(K_sat_N + C_2)) \
+                - mic_ment_light_leibig*V_max*min(light_dependent_change_in_C_2, nutrient_dependent_change_in_C_2) \
+                    - mic_ment_light_mult_lim*V_max*light_dependent_change_in_C_2*nutrient_dependent_change_in_C_2
     
     def dC_3_over_dt():
         """
@@ -131,8 +152,15 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
         rates and the concentrations at the given times.
     
         """
+        light_dependent_change_in_C_1 = (Ibox1/(K_sat_l + Ibox1))
+        nutrient_dependent_change_in_C_1 = ((C_1)/(K_sat_N + C_1))
+        light_dependent_change_in_C_2 = (Ibox2/(K_sat_l + Ibox2))
+        nutrient_dependent_change_in_C_2 = ((C_2)/(K_sat_N + C_2))
         return (psi*(C_2 - C_3) + k_23*(C_2 - C_3) + k_13*(C_1 - C_3))/vol_3 + \
-            (lambda_1*C_1*vol_1 + lambda_2*C_2*vol_2)/vol_3
+            (lambda_1*C_1*vol_1 + lambda_2*C_2*vol_2)/vol_3 + \
+                mic_ment_nolight*(V_max/10*((C_1)/(K_sat_N + C_1))*vol_1 + V_max*((C_2)/(K_sat_N + C_2))*vol_2)/vol_3 + \
+                    mic_ment_light_leibig*V_max/vol_3*(vol_1*min(light_dependent_change_in_C_1, nutrient_dependent_change_in_C_1) + vol_2*min(light_dependent_change_in_C_2, nutrient_dependent_change_in_C_2)) + \
+                        mic_ment_light_mult_lim*V_max/vol_3*(vol_1*light_dependent_change_in_C_1*nutrient_dependent_change_in_C_1 + vol_2*light_dependent_change_in_C_2*nutrient_dependent_change_in_C_2)
     
     
     ### Create arrays where the first array depicts the x-axis (time steps) and the three other
@@ -251,3 +279,18 @@ N_1_to_3 = 30*rho_0*10**(-6)
     # mol per cubic meter.
     
 transport_model_info = create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, 0.001, 10, 'Concentrations of N_1, N_2, and N_3 w/ exports, dt = 0.001', 'N',  3*10**-8, 3*10**-7)
+
+# -------------------------------------------------------------------------------------------------------------------
+# Michaelis-Menten Model, not considering effects of light.
+
+transport_model_graphing = create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, 0.001, 8, 'Concentrations of N_1, N_2, and N_3 w/ exports, dt = 0.001, variable export rate \n (Michaelis-Menten, 10*V_max_1 = V_max_2)', 'N',  mic_ment_nolight = 1)
+
+# -------------------------------------------------------------------------------------------------------------------
+# Michaelis-Menten Model, considering effects of light and Leibig's Law.
+
+transport_model_graphing = create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, 0.001, 8, 'Concentrations of N_1, N_2, and N_3 w/ exports, dt = 0.001, variable export rate \n (Michaelis-Menten, V_max_1 = V_max_2, light-limited, Leibig)', 'N',  mic_ment_light_leibig = 1)
+
+# -------------------------------------------------------------------------------------------------------------------
+# Michaelis-Menten Model, considering effects of light and the Multiplicative Law.
+
+transport_model_graphing = create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, 0.001, 8, 'Concentrations of N_1, N_2, and N_3 w/ exports, dt = 0.001, variable export rate \n (Michaelis-Menten, V_max_1 = V_max_2, light-limited, Multiplicative Law)', 'N',  mic_ment_light_mult_lim = 1)
