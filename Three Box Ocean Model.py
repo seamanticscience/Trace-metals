@@ -102,12 +102,13 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
     dt = dt_in_years*60*60*24*365  #Total number of seconds representing a year. 
     
     ## Initiate Variables that will "globally," at least within this function, keep track of 
-    ## concentrations of C_1 and C_2 to calculate C_3.
+    ## concentrations of C_1 and C_2 so that these values can be reused for C_3.
     light_dependent_change_in_C_1 = 0
     nutrient_dependent_change_in_C_1 = 0
+    iron_dependent_change_in_C_1 = 0
     light_dependent_change_in_C_2 = 0
     nutrient_dependent_change_in_C_2 = 0
-    
+    iron_dependent_change_in_C_2 = 0
     
     ## The following are functions that will output the values of dC_i/dt, for i in [1, 3].
         
@@ -128,14 +129,19 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
         # Establishing Michaelis-Menten quantities for light and nutrients.
         global light_dependent_change_in_C_1
         global nutrient_dependent_change_in_C_1
+        global iron_dependent_change_in_C_1
         light_dependent_change_in_C_1 = (Ibox1/(K_sat_l + Ibox1))
         nutrient_dependent_change_in_C_1 = ((C_1)/(K_sat_N + C_1))
+        if Fe_1 == None:
+            iron_dependent_change_in_C_1 = None
+        else:
+            iron_dependent_change_in_C_1 = (Fe_1/(K_sat_Fe + Fe_1))
             
         return (psi*(C_3 - C_1) + k_31*(C_3 - C_1) + k_21*(C_2 - C_1))/vol_1 \
             - lambda_1*C_1 \
                 - mic_ment_nolight*(V_max/100)*((C_1)/(K_sat_N + C_1)) \
-                    - mic_ment_light_leibig*V_max*min(light_dependent_change_in_C_1, nutrient_dependent_change_in_C_1) \
-                        - mic_ment_light_mult_lim*V_max*light_dependent_change_in_C_1*nutrient_dependent_change_in_C_1 
+                    - mic_ment_light_leibig*V_max*min(conc for conc in [light_dependent_change_in_C_1, nutrient_dependent_change_in_C_1, iron_dependent_change_in_C_1] if conc is not None) \
+                        - mic_ment_light_mult_lim*V_max*light_dependent_change_in_C_1*nutrient_dependent_change_in_C_1*float([1 if iron_dependent_change_in_C_1 == None else iron_dependent_change_in_C_1][0])
                         
         # Line 1: General tracer equation, maintains equilibrium among all three boxes with flow rate considered.
         # Line 2: Given fixed export rate lambda_1, considers the box's export rate dependent on nutrient concentration in given box.
@@ -192,14 +198,19 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
         # Establishing Michaelis-Menten quantities for light and nutrients.
         global light_dependent_change_in_C_2
         global nutrient_dependent_change_in_C_2
+        global iron_dependent_change_in_C_2
         light_dependent_change_in_C_2 = (Ibox2/(K_sat_l + Ibox2))
         nutrient_dependent_change_in_C_2 = ((C_2)/(K_sat_N + C_2))
+        if Fe_2 == None:
+            iron_dependent_change_in_C_2 = None
+        else:
+            iron_dependent_change_in_C_2 = (Fe_2/(K_sat_Fe + Fe_2))
         
         return (psi*(C_1 - C_2) + k_12*(C_1 - C_2) + k_32*(C_3 - C_2))/vol_2 \
             - lambda_2*C_2 \
                 - mic_ment_nolight*V_max*((C_2)/(K_sat_N + C_2)) \
-                    - mic_ment_light_leibig*V_max*min(light_dependent_change_in_C_2, nutrient_dependent_change_in_C_2) \
-                        - mic_ment_light_mult_lim*V_max*light_dependent_change_in_C_2*nutrient_dependent_change_in_C_2
+                    - mic_ment_light_leibig*V_max*min(conc for conc in [light_dependent_change_in_C_2, nutrient_dependent_change_in_C_2, iron_dependent_change_in_C_2] if conc is not None) \
+                        - mic_ment_light_mult_lim*V_max*light_dependent_change_in_C_2*nutrient_dependent_change_in_C_2*float([1 if iron_dependent_change_in_C_2 == None else iron_dependent_change_in_C_2][0])
     
         # Line 1: General tracer equation, maintains equilibrium among all three boxes with flow rate considered.
         # Line 2: Given fixed export rate lambda_2, considers the box's export rate dependent on nutrient concentration in given box.
@@ -258,8 +269,10 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
         return (psi*(C_2 - C_3) + k_23*(C_2 - C_3) + k_13*(C_1 - C_3))/vol_3 + \
             (lambda_1*C_1*vol_1 + lambda_2*C_2*vol_2)/vol_3 + \
                 mic_ment_nolight*(V_max/100*((C_1)/(K_sat_N + C_1))*vol_1 + V_max*((C_2)/(K_sat_N + C_2))*vol_2)/vol_3 + \
-                    mic_ment_light_leibig*V_max/vol_3*(vol_1*min(light_dependent_change_in_C_1, nutrient_dependent_change_in_C_1) + vol_2*min(light_dependent_change_in_C_2, nutrient_dependent_change_in_C_2)) + \
-                        mic_ment_light_mult_lim*V_max/vol_3*(vol_1*light_dependent_change_in_C_1*nutrient_dependent_change_in_C_1 + vol_2*light_dependent_change_in_C_2*nutrient_dependent_change_in_C_2)
+                    mic_ment_light_leibig*V_max/vol_3*(vol_1*min(conc for conc in [light_dependent_change_in_C_1, nutrient_dependent_change_in_C_1, iron_dependent_change_in_C_1] if conc is not None) \
+                                                       + vol_2*min(conc for conc in [light_dependent_change_in_C_2, nutrient_dependent_change_in_C_2, iron_dependent_change_in_C_2] if conc is not None)) \
+                       + mic_ment_light_mult_lim*V_max/vol_3*(vol_1*light_dependent_change_in_C_1*nutrient_dependent_change_in_C_1*float([1 if iron_dependent_change_in_C_1 == None else iron_dependent_change_in_C_1][0]) \
+                                                              + vol_2*light_dependent_change_in_C_2*nutrient_dependent_change_in_C_2*float([1 if iron_dependent_change_in_C_2 == None else iron_dependent_change_in_C_2][0]))
 
         # Line 1: General tracer equation, maintains equilibrium among all three boxes with flow rate considered.
         # Line 2: Given fixed export rate lambda_1 and lambda_2, considers the box's export rate dependent on nutrient concentration in given box.
@@ -313,6 +326,7 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
     C_3_list = [C_3,]
         # Initiate lists that will store the three concentrations, with initial concentrations already
         # in the lists.
+    
     if Fe_1 != None and Fe_2 != None and Fe_3 != None:
         Fe_1_list = [Fe_1,]
         Fe_2_list = [Fe_2,]
@@ -323,38 +337,58 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
         Fe_3_list = [0,]
         # Initiate lists that will hold concentration values of iron.
     
+    ## Create Temporary Variables that will store C_1, C_2, C_3, Fe_1, Fe_2, and Fe_3
+    ## to ensure that the concentrations used for all six time steps happen simultaneously,
+    ## i.e. we don't use the concentrations of the next time step to calculate the changes
+    ## in the current time step.
+    C_1_temp = C_1
+    C_2_temp = C_2
+    C_3_temp = C_3
+    Fe_1_temp = Fe_1
+    Fe_2_temp = Fe_2
+    Fe_3_temp = Fe_3
+        
     for t_val in time_axis_array:
         if t_val == 0:
             pass
                 # The initial concentration values (at time t_val = 0) have already been
                 # put into the lists, so if the time is 0 you do not have to do anything. 
         else:
-            C_1 += dC_1_over_dt()*dt
-            C_1_list.append(C_1)
+            C_1_temp += dC_1_over_dt()*dt
+            C_1_list.append(C_1_temp)
                 # Use Euler Step Function to change value of C_1 by one time step (i.e. dt). Then 
                 # append that value to the C_1_list of concentrations as the concentration for that
                 # given time. 
-            C_2 += dC_2_over_dt()*dt
-            C_2_list.append(C_2)
+            C_2_temp += dC_2_over_dt()*dt
+            C_2_list.append(C_2_temp)
                 # Use Euler Step Function to change value of C_2 by one time step (i.e. dt). Then 
                 # append that value to the C_2_list of concentrations as the concentration for that
                 # given time. 
-            C_3 += dC_3_over_dt()*dt
-            C_3_list.append(C_3)
+            C_3_temp += dC_3_over_dt()*dt
+            C_3_list.append(C_3_temp)
                 # Use Euler Step Function to change value of C_3 by one time step (i.e. dt). Then 
                 # append that value to the C_3_list of concentrations as the concentration for that
                 # given time. 
             if Fe_1 != None and Fe_2 != None and Fe_3 != None:
-                Fe_1 += dFe_1_over_dt()*dt
-                Fe_1_list.append(Fe_1)
+                Fe_1_temp += dFe_1_over_dt()*dt
+                Fe_1_list.append(Fe_1_temp)
                     # Iron in box 1.
-                Fe_2 += dFe_2_over_dt()*dt
-                Fe_2_list.append(Fe_2)
+                Fe_2_temp += dFe_2_over_dt()*dt
+                Fe_2_list.append(Fe_2_temp)
                     # Iron in box 2.
-                Fe_3 += dFe_3_over_dt()*dt
-                Fe_3_list.append(Fe_3)
+                Fe_3_temp += dFe_3_over_dt()*dt
+                Fe_3_list.append(Fe_3_temp)
                     # Iron in box 3.
-                
+            
+            ## Now update values of C_1 - C_3, Fe_1 - Fe_3 to the updated temp values.
+            C_1 = C_1_temp
+            C_2 = C_2_temp
+            C_3 = C_3_temp
+            Fe_1 = Fe_1_temp
+            Fe_2 = Fe_2_temp
+            Fe_3 = Fe_3_temp
+            
+            
     C_1_array = np.array(C_1_list)
     C_2_array = np.array(C_2_list)
     C_3_array = np.array(C_3_list)
@@ -414,14 +448,14 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
     
 transport_model_info = \
     create_transport_model(1.0, 1.0, 1.0, 1, 100, \
-                           'Concentrations of C_1, C_2, and C_3, initially all 1.0,' + ' dt = 1', 'C')
+                            'Concentrations of C_1, C_2, and C_3, initially all 1.0,' + ' dt = 1', 'C')
         # The tuple above is of the form (time_array, (C1_array, C2_array, C3_array)).
 
 # Concentrations of 0.1 for boxes 1 and 2, and 1.0 for box 3
 
 transport_model_plot = \
     create_transport_model(0.1, 0.1, 1.0, 1, 100, \
-                           'Concentrations of C_1 = 0.1, C_2 = 0.1, and C_3 = 1.0 initially,' + ' dt = 1', 'C')
+                            'Concentrations of C_1 = 0.1, C_2 = 0.1, and C_3 = 1.0 initially,' + ' dt = 1', 'C')
 
 # -----------------------------------------------------------------------------------------------------------------------------------------
 # Part 2: DIC and air-sea exchange of CO2. 
@@ -440,45 +474,45 @@ N_1_to_3 = 30*rho_0*10**(-6)
     
 transport_model_info = \
     create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, 0.001, 10, \
-                           'Concentrations of N_1, N_2, and N_3 w/ exports, dt = 0.001', 'N',  \
-                               3*10**-8, 3*10**-7)
+                            'Concentrations of N_1, N_2, and N_3 w/ exports, dt = 0.001', 'N',  \
+                                3*10**-8, 3*10**-7)
 
 # -------------------------------------------------------------------------------------------------------------------
 # Michaelis-Menten Model, not considering effects of light.
 
 transport_model_graphing = \
     create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, 0.001, 100, \
-                           'Concentrations of N_1, N_2, and N_3 w/ exports, dt = 0.001, variable export rate \n (Michaelis-Menten, 100*V_max_1 = V_max_2)', 'N',  \
-                               mic_ment_nolight = 1)
+                            'Concentrations of N_1, N_2, and N_3 w/ exports, dt = 0.001, variable export rate \n (Michaelis-Menten, 100*V_max_1 = V_max_2)', 'N',  \
+                                mic_ment_nolight = 1)
 
 # -------------------------------------------------------------------------------------------------------------------
 # Michaelis-Menten Model, considering effects of light and Leibig's Law.
 
 transport_model_graphing = \
     create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, 0.001, 8, \
-                           'Concentrations of N_1, N_2, and N_3 w/ exports, dt = 0.001, variable export rate \n (Michaelis-Menten, V_max_1 = V_max_2, light-limited, Leibig)', 'N',  \
-                               mic_ment_light_leibig = 1)
+                            'Concentrations of N_1, N_2, and N_3 w/ exports, dt = 0.001, variable export rate \n (Michaelis-Menten, V_max_1 = V_max_2, light-limited, Leibig)', 'N',  \
+                                mic_ment_light_leibig = 1)
 
 # -------------------------------------------------------------------------------------------------------------------
 # Michaelis-Menten Model, considering effects of light and the Multiplicative Law.
 
 transport_model_graphing = \
     create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, 0.001, 8, \
-                           'Concentrations of N_1, N_2, and N_3 w/ exports, dt = 0.001, variable export rate \n (Michaelis-Menten, V_max_1 = V_max_2, light-limited, Multiplicative Law)', 'N',  \
-                               mic_ment_light_mult_lim = 1)
+                            'Concentrations of N_1, N_2, and N_3 w/ exports, dt = 0.001, variable export rate \n (Michaelis-Menten, V_max_1 = V_max_2, light-limited, Multiplicative Law)', 'N',  \
+                                mic_ment_light_mult_lim = 1)
 
 # -------------------------------------------------------------------------------------------------------------------
 # Michaelis-Menten Model, considering effects of light and the two limit laws, but with Ibox1 = 0.1 W/m2
 
 transport_model_graphing_leibig = \
     create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, 0.001, 100, \
-                           'Concentrations of N_1, N_2, and N_3 w/ exports, dt = 0.001, variable export rate \n (Michaelis-Menten, V_max_1 = V_max_2, light-limited, Leibig, \n Ibox1 = 0.1)', 'N',  \
-                               mic_ment_light_leibig = 1, Ibox1 = 0.1)
+                            'Concentrations of N_1, N_2, and N_3 w/ exports, dt = 0.001, variable export rate \n (Michaelis-Menten, V_max_1 = V_max_2, light-limited, Leibig, \n Ibox1 = 0.1)', 'N',  \
+                                mic_ment_light_leibig = 1, Ibox1 = 0.1)
         
 transport_model_graphing_mult_law = \
     create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, 0.001, 100, \
-                           'Concentrations of N_1, N_2, and N_3 w/ exports, dt = 0.001, variable export rate \n (Michaelis-Menten, V_max_1 = V_max_2, light-limited, Multiplicative Law, \n Ibox1 = 0.1)', 'N',  \
-                               mic_ment_light_mult_lim = 1, Ibox1 = 0.1)
+                            'Concentrations of N_1, N_2, and N_3 w/ exports, dt = 0.001, variable export rate \n (Michaelis-Menten, V_max_1 = V_max_2, light-limited, Multiplicative Law, \n Ibox1 = 0.1)', 'N',  \
+                                mic_ment_light_mult_lim = 1, Ibox1 = 0.1)
 
 # -------------------------------------------------------------------------------------------------------------------
 # Michaelis-Menten Model, with Iron and the Net Scavenging Model (Case I in Parekh, 2004)
