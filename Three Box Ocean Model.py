@@ -101,6 +101,14 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
     
     dt = dt_in_years*60*60*24*365  #Total number of seconds representing a year. 
     
+    ## Initiate Variables that will "globally," at least within this function, keep track of 
+    ## concentrations of C_1 and C_2 to calculate C_3.
+    light_dependent_change_in_C_1 = 0
+    nutrient_dependent_change_in_C_1 = 0
+    light_dependent_change_in_C_2 = 0
+    nutrient_dependent_change_in_C_2 = 0
+    
+    
     ## The following are functions that will output the values of dC_i/dt, for i in [1, 3].
         
     def dC_1_over_dt():
@@ -118,6 +126,8 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
     
         """
         # Establishing Michaelis-Menten quantities for light and nutrients.
+        global light_dependent_change_in_C_1
+        global nutrient_dependent_change_in_C_1
         light_dependent_change_in_C_1 = (Ibox1/(K_sat_l + Ibox1))
         nutrient_dependent_change_in_C_1 = ((C_1)/(K_sat_N + C_1))
             
@@ -180,6 +190,8 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
     
         """
         # Establishing Michaelis-Menten quantities for light and nutrients.
+        global light_dependent_change_in_C_2
+        global nutrient_dependent_change_in_C_2
         light_dependent_change_in_C_2 = (Ibox2/(K_sat_l + Ibox2))
         nutrient_dependent_change_in_C_2 = ((C_2)/(K_sat_N + C_2))
         
@@ -237,11 +249,11 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
         rates and the concentrations at the given times.
     
         """
-        # Establishing Michaelis-Menten quantities for light and nutrients.
-        light_dependent_change_in_C_1 = (Ibox1/(K_sat_l + Ibox1))
-        nutrient_dependent_change_in_C_1 = ((C_1)/(K_sat_N + C_1))
-        light_dependent_change_in_C_2 = (Ibox2/(K_sat_l + Ibox2))
-        nutrient_dependent_change_in_C_2 = ((C_2)/(K_sat_N + C_2))
+                    # Establishing Michaelis-Menten quantities for light and nutrients.
+                    # light_dependent_change_in_C_1 = (Ibox1/(K_sat_l + Ibox1))
+                    # nutrient_dependent_change_in_C_1 = ((C_1)/(K_sat_N + C_1))
+                    # light_dependent_change_in_C_2 = (Ibox2/(K_sat_l + Ibox2))
+                    # nutrient_dependent_change_in_C_2 = ((C_2)/(K_sat_N + C_2))
         
         return (psi*(C_2 - C_3) + k_23*(C_2 - C_3) + k_13*(C_1 - C_3))/vol_3 + \
             (lambda_1*C_1*vol_1 + lambda_2*C_2*vol_2)/vol_3 + \
@@ -476,7 +488,7 @@ Fe_2_init = 5*10**-10
 Fe_3_init = 5*10**-10
 
 transport_model_graphing_mult_law = \
-    create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, 0.006849, 100, \
+    create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, 0.006849, 10000, \
                            'Concentrations of N_1, N_2, N_3, Fe_1, Fe_2, Fe_3 w/ exports, \n dt = 0.001, variable export rate, Michalis-Menten Model, Leibig Limit Approximation', 'N', \
                                mic_ment_light_leibig = 1, k_scav = 0.004, mu = 3.858*10**-7, \
                                    Fe_1 = Fe_1_init, Fe_2 = Fe_2_init, Fe_3 = Fe_3_init)
