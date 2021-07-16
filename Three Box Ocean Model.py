@@ -208,7 +208,7 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
         # gamma_1 = C_1*(Fe_1/(Fe_1 + K_sat_Fe))
         
         return (psi*(Fe_3 - Fe_1) + k_31*(Fe_3 - Fe_1) + k_21*(Fe_2 - Fe_1))/vol_1 + \
-            alpha*F_in1/dz_1 - k_scav*1000*Fe_1/(60*60*24*365) - R_Fe*export_1()
+            alpha*F_in1/dz_1 - k_scav*Fe_1/(60*60*24*365) - R_Fe*export_1()
                 
                 # Line 1: General tracer equation, maintains equilibrium among all three boxes with flow rate considered.
                 # Line 2: First term represents source, second term represents sink (in terms of being scavenged)
@@ -277,7 +277,7 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
         # gamma_2 = C_2*(Fe_2/(Fe_2 + K_sat_Fe))
         
         return (psi*(Fe_1 - Fe_2) + k_12*(Fe_1 - Fe_2) + k_32*(Fe_3 - Fe_2))/vol_2 + \
-            alpha*F_in2/dz_2 - k_scav*1000*Fe_2/(60*60*24*365) - R_Fe*export_2()
+            alpha*F_in2/dz_2 - k_scav*Fe_2/(60*60*24*365) - R_Fe*export_2()
 
         
     def dC_3_over_dt():
@@ -338,8 +338,9 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
         # gamma_3 = C_3*(Fe_3/(Fe_3 + K_sat_Fe))
         
         return (psi*(Fe_2 - Fe_3) + k_23*(Fe_2 - Fe_3) + k_13*(Fe_1 - Fe_3))/vol_3 \
-             - k_scav*1000*Fe_3/(60*60*24*365) \
+             - k_scav*Fe_3/(60*60*24*365) \
                 + R_Fe*(export_1()*dz_1 + export_2()*dz_2)/dz_3
+#                + R_Fe*(export_1()*dz_1 + export_2()*dz_2)/dz_3
     
     ### Create arrays where the first array depicts the x-axis (time steps) and the three other
     ### arrays depict concentrations of C_1, C_2, and C_3 over the time steps. 
@@ -347,14 +348,17 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
     ## Create x-axis array (time)
     
     time_axis_list = [0,]
+    time_axis_list_log10 = [1*10^-10,]
     t_temp = dt_in_years
     
     while t_temp <= end_time:
         t_temp += dt_in_years
-        time_axis_list.append(math.log10(t_temp))
+        time_axis_list.append(t_temp)
+        time_axis_list_log10.append(math.log10(t_temp))
             # At the end of this while loop, we will have a list of all time checkpoints for which
             # we want to calculate the three concentrations. 
     time_axis_array = np.array(time_axis_list)
+    time_axis_array_log10 = np.array(time_axis_list_log10)
     
     ## Create y-axis arrays (C_1, C_2, and C_3)
     
@@ -460,16 +464,17 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
         nutri_conc.set_title(f'{title}')
         nutri_conc.set_xlabel('Time (years)')
         nutri_conc.set_ylabel(f'Concentration (mol {element_symbol}_i per cubic meter)')
-        nutri_conc.plot(time_axis_array, array_of_C_1, 'r', label = f'{element_symbol}_1')
-        nutri_conc.plot(time_axis_array, array_of_C_2, 'm', label = f'{element_symbol}_2')
-        nutri_conc.plot(time_axis_array, array_of_C_3, 'b', label = f'{element_symbol}_3')
+        nutri_conc.plot(time_axis_array_log10, array_of_C_1, 'r', label = f'{element_symbol}_1')
+        nutri_conc.plot(time_axis_array_log10, array_of_C_2, 'm', label = f'{element_symbol}_2')
+        nutri_conc.plot(time_axis_array_log10, array_of_C_3, 'b', label = f'{element_symbol}_3')
         plt.legend(loc = 'best')
         if array_of_Fe_1.all() != np.array([0,]) and array_of_Fe_2.all() != np.array([0,]) and array_of_Fe_1.all() != np.array([0,]):
             iron_axis = nutri_conc.twinx()
             iron_axis.set_ylabel('Concentration of iron per cubic meter \n (in nmol/m3)')
-            iron_axis.plot(time_axis_array, array_of_Fe_1, 'r-.', label = 'Fe_1')
-            iron_axis.plot(time_axis_array, array_of_Fe_2, 'm-.', label = 'Fe_2')
-            iron_axis.plot(time_axis_array, array_of_Fe_3, 'b-.', label = 'Fe_3')
+            iron_axis.plot(time_axis_array_log10, array_of_Fe_1, 'g-.', label = 'Fe_1')
+            iron_axis.plot(time_axis_array_log10, array_of_Fe_2, 'k-.', label = 'Fe_2')
+            iron_axis.plot(time_axis_array_log10, array_of_Fe_3, 'c-.', label = 'Fe_3')
+        # plt.legend(nutri_conc + iron_axis, [nutri_conc.get_label(), iron_axis.get_label()], loc = 'best')
         plt.legend(loc = 'best')
         fig.tight_layout()
         plt.show()
@@ -568,7 +573,7 @@ Fe_3_init = 5*10**-10
 N_1_to_3 = 30*rho_0*10**(-6)
 
 transport_model_graphing_mult_law = \
-    create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, 0.006849, 15000, \
+    create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, 0.006849, 10000, \
                            'Concentrations of N_1, N_2, N_3, Fe_1, Fe_2, Fe_3 w/ exports, \n dt = 0.001, variable export rate, \n Michalis-Menten Model, Leibig Limit Approximation \n  ', 'N', \
                                mic_ment_light_leibig = 1, k_scav = 0.004, mu = 3.858*10**-7, \
                                    Fe_1 = Fe_1_init, Fe_2 = Fe_2_init, Fe_3 = Fe_3_init)
