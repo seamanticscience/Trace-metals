@@ -115,6 +115,14 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
           
     def export_1():
         """
+        Calculates export of organic matter from box 1, considering the Michaelis-Menten
+        approach and the liebig/multiplicative limit approach.
+        
+        Parameters:
+            None
+        Returns
+            Float, representing the total export of organic matter from box 1 according to current
+            concentration of light, nutrient, and iron.
         """
         global light_dependent_change_in_C_1
         global nutrient_dependent_change_in_C_1
@@ -130,6 +138,14 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
     
     def export_2():
         """
+        Calculates export of organic matter from box 1, considering the Michaelis-Menten
+        approach and the liebig/multiplicative limit approach.
+        
+        Parameters:
+            None
+        Returns
+            Float, representing the total export of organic matter from box 1 according to current
+            concentration of light, nutrient, and iron.
         """
         global light_dependent_change_in_C_2
         global nutrient_dependent_change_in_C_2
@@ -339,9 +355,38 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
         
         return (psi*(Fe_2 - Fe_3) + k_23*(Fe_2 - Fe_3) + k_13*(Fe_1 - Fe_3))/vol_3 \
              - k_scav*Fe_3/(60*60*24*365) \
-                + R_Fe*(export_1()*dz_1 + export_2()*dz_2)/dz_3
-#                + R_Fe*(export_1()*dz_1 + export_2()*dz_2)/dz_3
+                + R_Fe*(export_1()*vol_1 + export_2()*vol_2)/vol_3
+                
+    ### To find the free ion concentration at any given moment, the following function
+    ### calculates exactly that given our concentration of ligand, metal, and beta constant.
+    ### (via complexation)
     
+    def complexation(metal_tot, ligand_tot, beta):
+        """
+        Given a total metal concentration, ligand concentration, and beta value, this
+        function will return the total concentration of free metal that is not bound to
+        ligands (i.e. is free and prone to scavanging).
+
+        Parameters
+        ----------
+        metal_tot : float 
+            current total concentration of metal, value in mol per cubic meter 
+        ligand_tot : float
+            current total concentration of ligand, value in mol per cubic meter
+        beta : float
+            constant value, defines equilibrium position between free metal + ligand
+            and the complexed form. Value in kg/mol
+
+        Returns
+        -------
+        Float, current concentration of free metal.
+
+        """
+        term_1 = (metal_tot - 1 - ligand_tot)/2
+        term_2 = ((beta*(ligand_tot - metal_tot + 1)**2 + 4*metal_tot)/(4*beta))**(1/2)
+    
+        return term_1 + term_2
+        
     ### Create arrays where the first array depicts the x-axis (time steps) and the three other
     ### arrays depict concentrations of C_1, C_2, and C_3 over the time steps. 
     
@@ -462,7 +507,7 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
 
         fig, nutri_conc = plt.subplots()
         nutri_conc.set_title(f'{title}')
-        nutri_conc.set_xlabel('Time (years)')
+        nutri_conc.set_xlabel('Time [log(years)]')
         nutri_conc.set_ylabel(f'Concentration (mol {element_symbol}_i per cubic meter)')
         nutri_conc.plot(time_axis_array_log10, array_of_C_1, 'r', label = f'{element_symbol}_1')
         nutri_conc.plot(time_axis_array_log10, array_of_C_2, 'm', label = f'{element_symbol}_2')
@@ -574,7 +619,7 @@ N_1_to_3 = 30*rho_0*10**(-6)
 
 transport_model_graphing_mult_law = \
     create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, 0.006849, 10000, \
-                           'Concentrations of N_1, N_2, N_3, Fe_1, Fe_2, Fe_3 w/ exports, \n dt = 0.001, variable export rate, \n Michalis-Menten Model, Leibig Limit Approximation \n  ', 'N', \
+                           'Concentrations of N_1, N_2, N_3, Fe_1, Fe_2, Fe_3 w/ exports, \n dt = 2.5 days, variable export rate, \n Michalis-Menten Model, Leibig Limit Approximation \n  ', 'N', \
                                mic_ment_light_leibig = 1, k_scav = 0.004, mu = 3.858*10**-7, \
                                    Fe_1 = Fe_1_init, Fe_2 = Fe_2_init, Fe_3 = Fe_3_init)
                                         # Time step of 2.5 days
