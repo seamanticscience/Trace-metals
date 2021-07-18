@@ -61,7 +61,8 @@ f_dop = 0.67 # Fraction of particles that makes it into pool of nitrate, unitles
 
 def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_symbol, lambda_1 = 0, lambda_2 = 0, \
                            mic_ment_nolight = 0, mic_ment_light_leibig = 0, mic_ment_light_mult_lim = 0, Ibox1 = 35, \
-                               k_scav = 0, mu = 0, Fe_1 = None, Fe_2 = None, Fe_3 = None):
+                               k_scav = 0, mu = 0, Fe_1 = None, Fe_2 = None, Fe_3 = None, \
+                                   ligand_use = False, ligand_total_val = 0, beta_val = 0):
     """
     Uses first order ODEs to characterize the time dependence of the concentration(s)
     in the three boxes (of fixed dimension).
@@ -89,6 +90,10 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
             nutrients, nitrate in this case.)
         Fe_1, Fe_2, Fe_3: Initial concentrations of iron in the three boxes (float), 
             quantities in moles. Initially set to None. 
+        ligand_use: Boolean parameter, indicates whether we want to use ligands in this model (and whether
+            our free iron pool will differ from the total iron pool thanks to complexation).
+        ligand_total_val: float, initially set to 0 because by default we do not have any ligands in the model.
+        beta_val: float, initially set to 0 because we have no equilibrium between the metal and ligand concentrations.
 
     Returns
     -------
@@ -98,6 +103,12 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
                                 array of the concentrations over time for C_3))
         Plots graph with this information (not returned)
     """
+    ## Initially check to see if the michaelis-menton parameters passed in are either 0 or 1; any other
+    ## value, and raise a value error.
+    
+    ## Yet to be implemented.    
+    
+
     ## Initiate Time Variables
     
     dt = dt_in_years*60*60*24*365  #Total number of seconds representing a year. 
@@ -135,6 +146,8 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
             iron_dependent_change_in_C_1 = (Fe_1/(K_sat_Fe + Fe_1))
         return mic_ment_light_leibig*V_max*min(conc for conc in [light_dependent_change_in_C_1, nutrient_dependent_change_in_C_1, iron_dependent_change_in_C_1] if conc is not None) \
                         + mic_ment_light_mult_lim*V_max*light_dependent_change_in_C_1*nutrient_dependent_change_in_C_1*float([1 if iron_dependent_change_in_C_1 == None else iron_dependent_change_in_C_1][0])
+
+            # Exports governed by the Michaelis-Menton model, considering the Liebig and Multiplicative method of limit.
     
     def export_2():
         """
@@ -160,6 +173,8 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
         return mic_ment_light_leibig*V_max*min(conc for conc in [light_dependent_change_in_C_2, nutrient_dependent_change_in_C_2, iron_dependent_change_in_C_2] if conc is not None) \
                         + mic_ment_light_mult_lim*V_max*light_dependent_change_in_C_2*nutrient_dependent_change_in_C_2*float([1 if iron_dependent_change_in_C_2 == None else iron_dependent_change_in_C_2][0])
 
+            # Exports governed by the Michaelis-Menten model, considering both the Liebig and Multiplicative methods of limitation. 
+
     def dC_1_over_dt():
         """
         Calculates change in concentration of C_1 per cubic meter, in units of 
@@ -174,16 +189,6 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
         rates and the concentrations at the given times.
     
         """
-        # Establishing Michaelis-Menten quantities for light and nutrients.
-        # global light_dependent_change_in_C_1
-        # global nutrient_dependent_change_in_C_1
-        # global iron_dependent_change_in_C_1
-        # light_dependent_change_in_C_1 = (Ibox1/(K_sat_l + Ibox1))
-        # nutrient_dependent_change_in_C_1 = ((C_1)/(K_sat_N + C_1))
-        # if Fe_1 == None:
-        #     iron_dependent_change_in_C_1 = None
-        # else:
-        #     iron_dependent_change_in_C_1 = (Fe_1/(K_sat_Fe + Fe_1))
             
         return (psi*(C_3 - C_1) + k_31*(C_3 - C_1) + k_21*(C_2 - C_1))/vol_1 \
             - lambda_1*C_1 \
@@ -196,10 +201,7 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
         # Line 2: Given fixed export rate lambda_1, considers the box's export rate dependent on nutrient concentration in given box.
         # Line 3: NOT given fixed export, rate of export of organic matter from box 1 is governed by the Michaelis-Menten model.
             # We do not consider light in this model, and as such, we manually cut V_max by 100 to account for no light constraint.
-        # Line 4: NOT given fixed export, rate of export of organic matter from box 1 is governed by the Michaelis-Menten model.
-            # Light IS considered as a limiting factor, but we take the Liebig approach where we take the minimum value of the potential limiting factors.
-        # Line 5: NOT given fixed export, rate of export of organic matter from box 1 is governed by the Michaelis-Menten model.
-            # Light IS considered as a limiting factor, but we take the Multiplicative Limit approach where we multiply all limiting factors when considering export.
+        # Line 4: Amount of matter exported according to the given export function.
                 
     def dFe_1_over_dt():
         """
@@ -220,11 +222,12 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
             # quantity to mol Fe per second, divide by molar mass as well as the total number
             # of seconds in a year.
             
-        # Calculating gamma, which is dependent on nutrient concentrations. 
-        # gamma_1 = C_1*(Fe_1/(Fe_1 + K_sat_Fe))
-        
-        return (psi*(Fe_3 - Fe_1) + k_31*(Fe_3 - Fe_1) + k_21*(Fe_2 - Fe_1))/vol_1 + \
-            alpha*F_in1/dz_1 - k_scav*Fe_1/(60*60*24*365) - R_Fe*export_1()
+        if ligand_use == False:
+            return (psi*(Fe_3 - Fe_1) + k_31*(Fe_3 - Fe_1) + k_21*(Fe_2 - Fe_1))/vol_1 + \
+                alpha*F_in1/dz_1 - k_scav*Fe_1/(60*60*24*365) - R_Fe*export_1()
+        else:
+            return (psi*(Fe_3 - Fe_1) + k_31*(Fe_3 - Fe_1) + k_21*(Fe_2 - Fe_1))/vol_1 + \
+                alpha*F_in1/dz_1 - k_scav*complexation(Fe_1, ligand_total_val, beta_val)/(60*60*24*365) - R_Fe*export_1()
                 
                 # Line 1: General tracer equation, maintains equilibrium among all three boxes with flow rate considered.
                 # Line 2: First term represents source, second term represents sink (in terms of being scavenged)
@@ -244,16 +247,6 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
         rates and the concentrations at the given times.
     
         """
-        # Establishing Michaelis-Menten quantities for light and nutrients.
-        # global light_dependent_change_in_C_2
-        # global nutrient_dependent_change_in_C_2
-        # global iron_dependent_change_in_C_2
-        # light_dependent_change_in_C_2 = (Ibox2/(K_sat_l + Ibox2))
-        # nutrient_dependent_change_in_C_2 = ((C_2)/(K_sat_N + C_2))
-        # if Fe_2 == None:
-        #     iron_dependent_change_in_C_2 = None
-        # else:
-        #     iron_dependent_change_in_C_2 = (Fe_2/(K_sat_Fe + Fe_2))
         
         return (psi*(C_1 - C_2) + k_12*(C_1 - C_2) + k_32*(C_3 - C_2))/vol_2 \
             - lambda_2*C_2 \
@@ -265,10 +258,7 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
         # Line 1: General tracer equation, maintains equilibrium among all three boxes with flow rate considered.
         # Line 2: Given fixed export rate lambda_2, considers the box's export rate dependent on nutrient concentration in given box.
         # Line 3: NOT given fixed export, rate of export of organic matter from box 2 is governed by the Michaelis-Menten model.
-        # Line 4: NOT given fixed export, rate of export of organic matter from box 2 is governed by the Michaelis-Menten model.
-            # Light IS considered as a limiting factor, but we take the Liebig approach where we take the minimum value of the potential limiting factors.
-        # Line 5: NOT given fixed export, rate of export of organic matter from box 2 is governed by the Michaelis-Menten model.
-            # Light IS considered as a limiting factor, but we take the Multiplicative Limit approach where we multiply all limiting factors when considering export.
+        # Line 4: Amount of matter exported according to the given export function.
             
     def dFe_2_over_dt():
         """
@@ -289,12 +279,13 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
             # quantity to mol Fe per second, divide by molar mass as well as the total number
             # of seconds in a year.
             
-        # Calculating gamma, which is dependent on nutrient concentrations. 
-        # gamma_2 = C_2*(Fe_2/(Fe_2 + K_sat_Fe))
+        if ligand_use == False:
+            return (psi*(Fe_1 - Fe_2) + k_12*(Fe_1 - Fe_2) + k_32*(Fe_3 - Fe_2))/vol_2 + \
+                alpha*F_in2/dz_2 - k_scav*Fe_2/(60*60*24*365) - R_Fe*export_2()
+        else:
+            return (psi*(Fe_1 - Fe_2) + k_12*(Fe_1 - Fe_2) + k_32*(Fe_3 - Fe_2))/vol_2 + \
+                alpha*F_in2/dz_2 - k_scav*complexation(Fe_2, ligand_total_val, beta_val)/(60*60*24*365) - R_Fe*export_2()
         
-        return (psi*(Fe_1 - Fe_2) + k_12*(Fe_1 - Fe_2) + k_32*(Fe_3 - Fe_2))/vol_2 + \
-            alpha*F_in2/dz_2 - k_scav*Fe_2/(60*60*24*365) - R_Fe*export_2()
-
         
     def dC_3_over_dt():
         """
@@ -310,32 +301,19 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
         rates and the concentrations at the given times.
     
         """
-                    # Establishing Michaelis-Menten quantities for light and nutrients.
-                    # light_dependent_change_in_C_1 = (Ibox1/(K_sat_l + Ibox1))
-                    # nutrient_dependent_change_in_C_1 = ((C_1)/(K_sat_N + C_1))
-                    # light_dependent_change_in_C_2 = (Ibox2/(K_sat_l + Ibox2))
-                    # nutrient_dependent_change_in_C_2 = ((C_2)/(K_sat_N + C_2))
         
         return (psi*(C_2 - C_3) + k_23*(C_2 - C_3) + k_13*(C_1 - C_3))/vol_3 + \
             (lambda_1*C_1*vol_1 + lambda_2*C_2*vol_2)/vol_3 + \
                 mic_ment_nolight*(V_max/100*((C_1)/(K_sat_N + C_1))*vol_1 + V_max*((C_2)/(K_sat_N + C_2))*vol_2)/vol_3 \
                     + (export_1()*vol_1 + export_2()*vol_2)/vol_3
-                    
-                    # mic_ment_light_leibig*V_max/vol_3*(vol_1*min(conc for conc in [light_dependent_change_in_C_1, nutrient_dependent_change_in_C_1, iron_dependent_change_in_C_1] if conc is not None) \
-                    #                                    + vol_2*min(conc for conc in [light_dependent_change_in_C_2, nutrient_dependent_change_in_C_2, iron_dependent_change_in_C_2] if conc is not None)) \
-                    #    + mic_ment_light_mult_lim*V_max/vol_3*(vol_1*light_dependent_change_in_C_1*nutrient_dependent_change_in_C_1*float([1 if iron_dependent_change_in_C_1 == None else iron_dependent_change_in_C_1][0]) \
-                    #                                           + vol_2*light_dependent_change_in_C_2*nutrient_dependent_change_in_C_2*float([1 if iron_dependent_change_in_C_2 == None else iron_dependent_change_in_C_2][0]))
-
+                
         # Line 1: General tracer equation, maintains equilibrium among all three boxes with flow rate considered.
         # Line 2: Given fixed export rate lambda_1 and lambda_2, considers the box's export rate dependent on nutrient concentration in given box.
             # For this particular box, the export received from the other boxes goes to this box.
         # Line 3: NOT given fixed export, rate of export of organic matter from box 1 and 2 is governed by the Michaelis-Menten model.
             # We do not consider light in this model, and as such, we manually cut V_max by 100 to account for no light constraint in box 1
             # and V_max in itself for box 2.
-        # Line 4: NOT given fixed export, rate of export of organic matter from box 1 and 2 is governed by the Michaelis-Menten model.
-            # Light IS considered as a limiting factor, but we take the Liebig approach where we take the minimum value of the potential limiting factors.
-        # Line 5: NOT given fixed export, rate of export of organic matter from box 1 and 2 is governed by the Michaelis-Menten model.
-            # Light IS considered as a limiting factor, but we take the Multiplicative Limit approach where we multiply all limiting factors when considering export.
+        # Line 4: Amount of matter exported according to the given export function.
             
     def dFe_3_over_dt():
         """
@@ -350,12 +328,15 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
         Number quantity reflecting change of Fe_2 per unit time, governed by the flow
         rates and the concentrations at the given times.
         """
-        # Calculating gamma_3
-        # gamma_3 = C_3*(Fe_3/(Fe_3 + K_sat_Fe))
-        
-        return (psi*(Fe_2 - Fe_3) + k_23*(Fe_2 - Fe_3) + k_13*(Fe_1 - Fe_3))/vol_3 \
-             - k_scav*Fe_3/(60*60*24*365) \
-                + R_Fe*(export_1()*vol_1 + export_2()*vol_2)/vol_3
+
+        if ligand_use == False:        
+            return (psi*(Fe_2 - Fe_3) + k_23*(Fe_2 - Fe_3) + k_13*(Fe_1 - Fe_3))/vol_3 \
+                 - k_scav*Fe_3/(60*60*24*365) \
+                    + R_Fe*(export_1()*vol_1 + export_2()*vol_2)/vol_3
+        else:
+            return (psi*(Fe_2 - Fe_3) + k_23*(Fe_2 - Fe_3) + k_13*(Fe_1 - Fe_3))/vol_3 \
+                 - k_scav*complexation(Fe_3, ligand_total_val, beta_val)/(60*60*24*365) \
+                    + R_Fe*(export_1()*vol_1 + export_2()*vol_2)/vol_3
                 
     ### To find the free ion concentration at any given moment, the following function
     ### calculates exactly that given our concentration of ligand, metal, and beta constant.
@@ -626,3 +607,17 @@ transport_model_graphing_mult_law = \
                                         
 # Concentration of total iron is about 1 nanomol per liter (mmol/)
 # Free iron 0.1 or 0.2 (1% of total iron is free)
+
+# -------------------------------------------------------------------------------------------------------------------
+# Michaelis-Menten Model, with Iron and free concentration governed by scavenging of free iron. Fixed ligand concentration and beta value.
+
+ligand_conc = 1*10**-6 # mol/m3
+beta_val_1 = 10**9 * rho_0 # kg/mol, as required by the value earlier.
+
+transport_model_graphing_ligand_approach = \
+        create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, 0.006849, 10000, \
+                           'Concentrations of N_1, N_2, N_3, Fe_1, Fe_2, Fe_3 w/ exports and complexation, \n dt = 2.5 days, variable export rate, \n ligand concentration = 10**-6, beta = 10**9 * rho_0 (kg per mol) \n Michalis-Menten Model, Leibig Limit Approximation \n  ', 'N', \
+                               mic_ment_light_leibig = 1, k_scav = 0.19, mu = 3.858*10**-7, \
+                                   Fe_1 = Fe_1_init, Fe_2 = Fe_2_init, Fe_3 = Fe_3_init, \
+                                       ligand_use = True, ligand_total_val = ligand_conc, beta_val = beta_val_1)
+                                        # Time step of 2.5 days
