@@ -55,6 +55,12 @@ R_Fe = (2.5*10**-5)*6.625 #unitless, multiplied by 6.625 to convert this Fe:C ra
 K_sat_Fe = 2*10**-7 #units of mole per cubic meter
 f_dop = 0.67 # Fraction of particles that makes it into pool of nitrate, unitless.
 
+# Global Values for Ligand Cycling and Microbial Production
+K_I = 45 #W/m2
+gamma = 5*10**(-5)*(106/16) # Units of mol L/(mol N), converted using Redfield Ratio.
+lambda_ligand = gamma/4398
+
+### -------------------------------------------------------------------------------------------
 
 ## The following functions abstract the process of creating the transport model
 ## (using the ODEs we have generalized to the system).
@@ -62,7 +68,11 @@ f_dop = 0.67 # Fraction of particles that makes it into pool of nitrate, unitles
 def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_symbol, lambda_1 = 0, lambda_2 = 0, \
                            mic_ment_nolight = 0, mic_ment_light_leibig = 0, mic_ment_light_mult_lim = 0, Ibox1 = 35, \
                                k_scav = 0, mu = 0, Fe_1 = None, Fe_2 = None, Fe_3 = None, \
-                                   ligand_use = False, ligand_total_val = 0, beta_val = 0):
+                                   use_iron = False, \
+                                   ligand_use = False, ligand_total_val = 0, beta_val = 0, \
+                                       L_1 = 0, L_2 = 0, L_3 = 0, \
+                                           use_ligand_cycling = False, \
+                                               one_graph = True, multi_graph = False):
     """
     Uses first order ODEs to characterize the time dependence of the concentration(s)
     in the three boxes (of fixed dimension).
@@ -94,6 +104,7 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
             our free iron pool will differ from the total iron pool thanks to complexation).
         ligand_total_val: float, initially set to 0 because by default we do not have any ligands in the model.
         beta_val: float, initially set to 0 because we have no equilibrium between the metal and ligand concentrations.
+        L_1, L_2, L_3: Initial Concentrations of Ligand in the three boxes. 
 
     Returns
     -------
@@ -122,8 +133,264 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
     nutrient_dependent_change_in_C_2 = 0
     iron_dependent_change_in_C_2 = 0
     
-    ## The following are functions that will output the values of dC_i/dt, for i in [1, 3]. Includes other helper functions.
+    # ...........................................................................
+    
+    ## Differential Functions
+    
+    # Cycling of Matter ---------------------------------------------
+    
           
+    # Concentration of Nutrients --------------------------------------------------
+    def dC_1_over_dt():
+        """
+        Calculates change in concentration of C_1 per cubic meter, in units of 
+        moles of C_1 per cubic meter per unit time.
+        
+        The quanities needed are stored in the variables defined earlier. 
+        
+    
+        Returns
+        -------
+        Number quantity reflecting change of C_1 per unit time, governed by the flow
+        rates and the concentrations at the given times.
+    
+        """
+            
+        return (psi*(C_3 - C_1) + k_31*(C_3 - C_1) + k_21*(C_2 - C_1))/vol_1 \
+            - lambda_1*C_1 \
+                - mic_ment_nolight*(V_max/100)*((C_1)/(K_sat_N + C_1)) \
+                   - export_1() 
+                        
+        # Line 1: General tracer equation, maintains equilibrium among all three boxes with flow rate considered.
+        # Line 2: Given fixed export rate lambda_1, considers the box's export rate dependent on nutrient concentration in given box.
+        # Line 3: NOT given fixed export, rate of export of organic matter from box 1 is governed by the Michaelis-Menten model.
+            # We do not consider light in this model, and as such, we manually cut V_max by 100 to account for no light constraint.
+        # Line 4: Amount of matter exported according to the given export function.
+                
+                    
+    def dC_2_over_dt():
+        """
+        Calculates change in concentration of C_2 per cubic meter, in units of 
+        moles of C_2 per cubic meter per unit time.
+        
+        The quanities needed are stored in the variables defined earlier. 
+        
+    
+        Returns
+        -------
+        Number quantity reflecting change of C_2 per unit time, governed by the flow
+        rates and the concentrations at the given times.
+    
+        """
+        
+        return (psi*(C_1 - C_2) + k_12*(C_1 - C_2) + k_32*(C_3 - C_2))/vol_2 \
+            - lambda_2*C_2 \
+                - mic_ment_nolight*V_max*((C_2)/(K_sat_N + C_2)) \
+                    - export_2()
+
+        # Line 1: General tracer equation, maintains equilibrium among all three boxes with flow rate considered.
+        # Line 2: Given fixed export rate lambda_2, considers the box's export rate dependent on nutrient concentration in given box.
+        # Line 3: NOT given fixed export, rate of export of organic matter from box 2 is governed by the Michaelis-Menten model.
+        # Line 4: Amount of matter exported according to the given export function.
+            
+    def dC_3_over_dt():
+        """
+        Calculates change in concentration of C_3 per cubic meter, in units of 
+        moles of C_3 per cubic meter per unit time.
+        
+        The quanities needed are stored in the variables defined earlier. 
+        
+    
+        Returns
+        -------
+        Number quantity reflecting change of C_3 per unit time, governed by the flow
+        rates and the concentrations at the given times.
+    
+        """
+        
+        return (psi*(C_2 - C_3) + k_23*(C_2 - C_3) + k_13*(C_1 - C_3))/vol_3 + \
+            (lambda_1*C_1*vol_1 + lambda_2*C_2*vol_2)/vol_3 + \
+                mic_ment_nolight*(V_max/100*((C_1)/(K_sat_N + C_1))*vol_1 + V_max*((C_2)/(K_sat_N + C_2))*vol_2)/vol_3 \
+                    + (export_1()*vol_1 + export_2()*vol_2)/vol_3
+                
+        # Line 1: General tracer equation, maintains equilibrium among all three boxes with flow rate considered.
+        # Line 2: Given fixed export rate lambda_1 and lambda_2, considers the box's export rate dependent on nutrient concentration in given box.
+            # For this particular box, the export received from the other boxes goes to this box.
+        # Line 3: NOT given fixed export, rate of export of organic matter from box 1 and 2 is governed by the Michaelis-Menten model.
+            # We do not consider light in this model, and as such, we manually cut V_max by 100 to account for no light constraint in box 1
+            # and V_max in itself for box 2.
+        # Line 4: Amount of matter exported according to the given export function.
+
+    # Concentration of Iron (or any trace metal in fact) -----------------------------
+    
+    def dFe_1_over_dt():
+        """
+        Calculates change in concentration of Fe_1 per cubic meter, in units of 
+        moles of Fe_1 per cubic meter per unit time.
+        
+        The quanities needed are stored in the variables defined earlier. 
+        
+    
+        Returns
+        -------
+        Number quantity reflecting change of Fe_1 per unit time, governed by the flow
+        rates and the concentrations at the given times.
+        """
+        # Establishing F_in
+        F_in1 = 0.071/(55.845*60*60*24*365)
+            # The quanitity is initially provided in grams Fe per year. To convert this
+            # quantity to mol Fe per second, divide by molar mass as well as the total number
+            # of seconds in a year.
+            
+        if ligand_use == False:
+            return (psi*(Fe_3 - Fe_1) + k_31*(Fe_3 - Fe_1) + k_21*(Fe_2 - Fe_1))/vol_1 + \
+                alpha*F_in1/dz_1 - k_scav*Fe_1/(60*60*24*365) - R_Fe*export_1()
+        elif use_ligand_cycling == False:
+            return (psi*(Fe_3 - Fe_1) + k_31*(Fe_3 - Fe_1) + k_21*(Fe_2 - Fe_1))/vol_1 + \
+                alpha*F_in1/dz_1 - k_scav*complexation(Fe_1, ligand_total_val, beta_val)/(60*60*24*365) - R_Fe*export_1()
+        else: 
+            return (psi*(Fe_3 - Fe_1) + k_31*(Fe_3 - Fe_1) + k_21*(Fe_2 - Fe_1))/vol_1 + \
+                alpha*F_in1/dz_1 - k_scav*complexation(Fe_1, L_1, beta_val)/(60*60*24*365) - R_Fe*export_1()
+            
+                # Line 1: General tracer equation, maintains equilibrium among all three boxes with flow rate considered.
+                # Line 2: First term represents source, second term represents sink (in terms of being scavenged)
+                    # Third term represents amount being used up ('biological utilization' as in Parekh, 2004)
+
+    def dFe_2_over_dt():
+        """
+        Calculates change in concentration of Fe_2 per cubic meter, in units of 
+        moles of Fe_2 per cubic meter per unit time.
+        
+        The quanities needed are stored in the variables defined earlier. 
+        
+    
+        Returns
+        -------
+        Number quantity reflecting change of Fe_2 per unit time, governed by the flow
+        rates and the concentrations at the given times.
+        """
+        # Establishing F_in.
+        F_in2 = 6.46/(55.845*60*60*24*365)
+            # The quanitity is initially provided in grams Fe per year. To convert this
+            # quantity to mol Fe per second, divide by molar mass as well as the total number
+            # of seconds in a year.
+            
+        if ligand_use == False:
+            return (psi*(Fe_1 - Fe_2) + k_12*(Fe_1 - Fe_2) + k_32*(Fe_3 - Fe_2))/vol_2 + \
+                alpha*F_in2/dz_2 - k_scav*Fe_2/(60*60*24*365) - R_Fe*export_2()
+        elif use_ligand_cycling == False:
+            return (psi*(Fe_1 - Fe_2) + k_12*(Fe_1 - Fe_2) + k_32*(Fe_3 - Fe_2))/vol_2 + \
+                alpha*F_in2/dz_2 - k_scav*complexation(Fe_2, ligand_total_val, beta_val)/(60*60*24*365) - R_Fe*export_2()
+        else:
+             return (psi*(Fe_1 - Fe_2) + k_12*(Fe_1 - Fe_2) + k_32*(Fe_3 - Fe_2))/vol_2 + \
+                alpha*F_in2/dz_2 - k_scav*complexation(Fe_2, L_2, beta_val)/(60*60*24*365) - R_Fe*export_2()           
+        
+    def dFe_3_over_dt():
+        """
+        Calculates change in concentration of Fe_3 per cubic meter, in units of 
+        moles of Fe_3 per cubic meter per unit time.
+        
+        The quanities needed are stored in the variables defined earlier. 
+        
+    
+        Returns
+        -------
+        Number quantity reflecting change of Fe_2 per unit time, governed by the flow
+        rates and the concentrations at the given times.
+        """
+
+        if ligand_use == False:        
+            return (psi*(Fe_2 - Fe_3) + k_23*(Fe_2 - Fe_3) + k_13*(Fe_1 - Fe_3))/vol_3 \
+                 - k_scav*Fe_3/(60*60*24*365) \
+                    + R_Fe*(export_1()*vol_1 + export_2()*vol_2)/vol_3
+        elif use_ligand_cycling == False:
+            return (psi*(Fe_2 - Fe_3) + k_23*(Fe_2 - Fe_3) + k_13*(Fe_1 - Fe_3))/vol_3 \
+                 - k_scav*complexation(Fe_3, ligand_total_val, beta_val)/(60*60*24*365) \
+                    + R_Fe*(export_1()*vol_1 + export_2()*vol_2)/vol_3
+        else: 
+            return (psi*(Fe_2 - Fe_3) + k_23*(Fe_2 - Fe_3) + k_13*(Fe_1 - Fe_3))/vol_3 \
+                 - k_scav*complexation(Fe_3, L_3, beta_val)/(60*60*24*365) \
+                    + R_Fe*(export_1()*vol_1 + export_2()*vol_2)/vol_3
+
+    ### To find the free ion concentration at any given moment, the following function
+    ### calculates exactly that given our concentration of ligand, metal, and beta constant.
+    ### (via complexation)
+    
+    # Concentration of Ligands -----------------------------------------------------
+    
+    def dLt_1_over_dt():
+        """
+        Calculates change in total ligand in specified box in units of mols per cubic meter.
+        Addresses ligands cycling through the three boxes, as well as sources/sinks.
+
+        Parameters
+        ----------
+            None.
+
+        Returns
+        -------
+        Value in units of mols per cubic meter per second (changing concentration of ligand)
+
+        """
+        
+        # B_1 = V_max*(Ibox1/(K_I + Ibox1))*min(C_1/(K_sat_N + C_1), Fe_1/(K_sat_Fe + Fe_1))
+        
+        return (psi*(L_3 - L_1) + k_31*(L_3 - L_1) + k_21*(L_2 - L_1))/vol_1 \
+            + gamma*export_1() \
+                - lambda_ligand*L_1
+
+                    # Line 1: Cycling of ligands in and out of box 1.
+                    # Line 2: Source (with appropriate gamma)
+                    # Line 3: Loss of ligands to degredation.
+                
+    def dLt_2_over_dt():
+        """
+        Calculates change in total ligand in specified box in units of mols per cubic meter.
+        Addresses ligands cycling through the three boxes, as well as sources/sinks.
+
+        Parameters
+        ----------
+            None.
+
+        Returns
+        -------
+        Value in units of mols per cubic meter per second (changing concentration of ligand)
+
+        """        
+        # B_2 = V_max*(Ibox2/(K_I + Ibox2))*min(C_2/(K_sat_N + C_2), Fe_2/(K_sat_Fe + Fe_2))
+        
+        return (psi*(L_1 - L_2) + k_12*(L_1 - L_2) + k_32*(L_3 - L_2))/vol_2 \
+            + gamma*export_2() \
+                - lambda_ligand*L_2
+                
+                    # Line 1: Cycling of ligands in and out of box 2.
+                    # Line 2: Source (with appropriate gamma)
+                    # Line 3: Loss of ligands to degredation.
+                    
+    def dLt_3_over_dt():
+        """
+        Calculates change in total ligand in specified box in units of mols per cubic meter.
+        Addresses ligands cycling through the three boxes, as well as sources/sinks.
+
+        Parameters
+        ----------
+            None.
+
+        Returns
+        -------
+        Value in units of mols per cubic meter per second (changing concentration of ligand)
+
+        """        
+        return (psi*(L_2 - L_3) + k_23*(L_2 - L_3) + k_13*(L_1 - L_3))/vol_3 \
+            - lambda_ligand/100*L_3 \
+                + gamma/vol_3*(export_1()*vol_1 + export_2()*vol_2)
+            
+            # Line 1: Cycling of ligands
+            # Line 2: Loss of ligand
+            # Line 3: Input of ligands based on export 'reception'
+        
+    # Export Production --------------------------------------------------
+    
     def export_1():
         """
         Calculates export of organic matter from box 1, considering the Michaelis-Menten
@@ -173,174 +440,9 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
         return mic_ment_light_leibig*V_max*min(conc for conc in [light_dependent_change_in_C_2, nutrient_dependent_change_in_C_2, iron_dependent_change_in_C_2] if conc is not None) \
                         + mic_ment_light_mult_lim*V_max*light_dependent_change_in_C_2*nutrient_dependent_change_in_C_2*float([1 if iron_dependent_change_in_C_2 == None else iron_dependent_change_in_C_2][0])
 
-            # Exports governed by the Michaelis-Menten model, considering both the Liebig and Multiplicative methods of limitation. 
-
-    def dC_1_over_dt():
-        """
-        Calculates change in concentration of C_1 per cubic meter, in units of 
-        moles of C_1 per cubic meter per unit time.
-        
-        The quanities needed are stored in the variables defined earlier. 
-        
+            # Exports governed by the Michaelis-Menten model, considering both the Liebig and Multiplicative methods of limitation.
     
-        Returns
-        -------
-        Number quantity reflecting change of C_1 per unit time, governed by the flow
-        rates and the concentrations at the given times.
-    
-        """
-            
-        return (psi*(C_3 - C_1) + k_31*(C_3 - C_1) + k_21*(C_2 - C_1))/vol_1 \
-            - lambda_1*C_1 \
-                - mic_ment_nolight*(V_max/100)*((C_1)/(K_sat_N + C_1)) \
-                   - export_1() 
-                    # - mic_ment_light_leibig*V_max*min(conc for conc in [light_dependent_change_in_C_1, nutrient_dependent_change_in_C_1, iron_dependent_change_in_C_1] if conc is not None) \
-                    #     - mic_ment_light_mult_lim*V_max*light_dependent_change_in_C_1*nutrient_dependent_change_in_C_1*float([1 if iron_dependent_change_in_C_1 == None else iron_dependent_change_in_C_1][0])
-                        
-        # Line 1: General tracer equation, maintains equilibrium among all three boxes with flow rate considered.
-        # Line 2: Given fixed export rate lambda_1, considers the box's export rate dependent on nutrient concentration in given box.
-        # Line 3: NOT given fixed export, rate of export of organic matter from box 1 is governed by the Michaelis-Menten model.
-            # We do not consider light in this model, and as such, we manually cut V_max by 100 to account for no light constraint.
-        # Line 4: Amount of matter exported according to the given export function.
-                
-    def dFe_1_over_dt():
-        """
-        Calculates change in concentration of Fe_1 per cubic meter, in units of 
-        moles of Fe_1 per cubic meter per unit time.
-        
-        The quanities needed are stored in the variables defined earlier. 
-        
-    
-        Returns
-        -------
-        Number quantity reflecting change of Fe_1 per unit time, governed by the flow
-        rates and the concentrations at the given times.
-        """
-        # Establishing F_in
-        F_in1 = 0.071/(55.845*60*60*24*365)
-            # The quanitity is initially provided in grams Fe per year. To convert this
-            # quantity to mol Fe per second, divide by molar mass as well as the total number
-            # of seconds in a year.
-            
-        if ligand_use == False:
-            return (psi*(Fe_3 - Fe_1) + k_31*(Fe_3 - Fe_1) + k_21*(Fe_2 - Fe_1))/vol_1 + \
-                alpha*F_in1/dz_1 - k_scav*Fe_1/(60*60*24*365) - R_Fe*export_1()
-        else:
-            return (psi*(Fe_3 - Fe_1) + k_31*(Fe_3 - Fe_1) + k_21*(Fe_2 - Fe_1))/vol_1 + \
-                alpha*F_in1/dz_1 - k_scav*complexation(Fe_1, ligand_total_val, beta_val)/(60*60*24*365) - R_Fe*export_1()
-                
-                # Line 1: General tracer equation, maintains equilibrium among all three boxes with flow rate considered.
-                # Line 2: First term represents source, second term represents sink (in terms of being scavenged)
-                    # Third term represents amount being used up ('biological utilization' as in Parekh, 2004)
-                    
-    def dC_2_over_dt():
-        """
-        Calculates change in concentration of C_2 per cubic meter, in units of 
-        moles of C_2 per cubic meter per unit time.
-        
-        The quanities needed are stored in the variables defined earlier. 
-        
-    
-        Returns
-        -------
-        Number quantity reflecting change of C_2 per unit time, governed by the flow
-        rates and the concentrations at the given times.
-    
-        """
-        
-        return (psi*(C_1 - C_2) + k_12*(C_1 - C_2) + k_32*(C_3 - C_2))/vol_2 \
-            - lambda_2*C_2 \
-                - mic_ment_nolight*V_max*((C_2)/(K_sat_N + C_2)) \
-                    - export_2()
-                    # - mic_ment_light_leibig*V_max*min(conc for conc in [light_dependent_change_in_C_2, nutrient_dependent_change_in_C_2, iron_dependent_change_in_C_2] if conc is not None) \
-                    #     - mic_ment_light_mult_lim*V_max*light_dependent_change_in_C_2*nutrient_dependent_change_in_C_2*float([1 if iron_dependent_change_in_C_2 == None else iron_dependent_change_in_C_2][0])
-
-        # Line 1: General tracer equation, maintains equilibrium among all three boxes with flow rate considered.
-        # Line 2: Given fixed export rate lambda_2, considers the box's export rate dependent on nutrient concentration in given box.
-        # Line 3: NOT given fixed export, rate of export of organic matter from box 2 is governed by the Michaelis-Menten model.
-        # Line 4: Amount of matter exported according to the given export function.
-            
-    def dFe_2_over_dt():
-        """
-        Calculates change in concentration of Fe_2 per cubic meter, in units of 
-        moles of Fe_2 per cubic meter per unit time.
-        
-        The quanities needed are stored in the variables defined earlier. 
-        
-    
-        Returns
-        -------
-        Number quantity reflecting change of Fe_2 per unit time, governed by the flow
-        rates and the concentrations at the given times.
-        """
-        # Establishing F_in.
-        F_in2 = 6.46/(55.845*60*60*24*365)
-            # The quanitity is initially provided in grams Fe per year. To convert this
-            # quantity to mol Fe per second, divide by molar mass as well as the total number
-            # of seconds in a year.
-            
-        if ligand_use == False:
-            return (psi*(Fe_1 - Fe_2) + k_12*(Fe_1 - Fe_2) + k_32*(Fe_3 - Fe_2))/vol_2 + \
-                alpha*F_in2/dz_2 - k_scav*Fe_2/(60*60*24*365) - R_Fe*export_2()
-        else:
-            return (psi*(Fe_1 - Fe_2) + k_12*(Fe_1 - Fe_2) + k_32*(Fe_3 - Fe_2))/vol_2 + \
-                alpha*F_in2/dz_2 - k_scav*complexation(Fe_2, ligand_total_val, beta_val)/(60*60*24*365) - R_Fe*export_2()
-        
-        
-    def dC_3_over_dt():
-        """
-        Calculates change in concentration of C_3 per cubic meter, in units of 
-        moles of C_3 per cubic meter per unit time.
-        
-        The quanities needed are stored in the variables defined earlier. 
-        
-    
-        Returns
-        -------
-        Number quantity reflecting change of C_3 per unit time, governed by the flow
-        rates and the concentrations at the given times.
-    
-        """
-        
-        return (psi*(C_2 - C_3) + k_23*(C_2 - C_3) + k_13*(C_1 - C_3))/vol_3 + \
-            (lambda_1*C_1*vol_1 + lambda_2*C_2*vol_2)/vol_3 + \
-                mic_ment_nolight*(V_max/100*((C_1)/(K_sat_N + C_1))*vol_1 + V_max*((C_2)/(K_sat_N + C_2))*vol_2)/vol_3 \
-                    + (export_1()*vol_1 + export_2()*vol_2)/vol_3
-                
-        # Line 1: General tracer equation, maintains equilibrium among all three boxes with flow rate considered.
-        # Line 2: Given fixed export rate lambda_1 and lambda_2, considers the box's export rate dependent on nutrient concentration in given box.
-            # For this particular box, the export received from the other boxes goes to this box.
-        # Line 3: NOT given fixed export, rate of export of organic matter from box 1 and 2 is governed by the Michaelis-Menten model.
-            # We do not consider light in this model, and as such, we manually cut V_max by 100 to account for no light constraint in box 1
-            # and V_max in itself for box 2.
-        # Line 4: Amount of matter exported according to the given export function.
-            
-    def dFe_3_over_dt():
-        """
-        Calculates change in concentration of Fe_3 per cubic meter, in units of 
-        moles of Fe_3 per cubic meter per unit time.
-        
-        The quanities needed are stored in the variables defined earlier. 
-        
-    
-        Returns
-        -------
-        Number quantity reflecting change of Fe_2 per unit time, governed by the flow
-        rates and the concentrations at the given times.
-        """
-
-        if ligand_use == False:        
-            return (psi*(Fe_2 - Fe_3) + k_23*(Fe_2 - Fe_3) + k_13*(Fe_1 - Fe_3))/vol_3 \
-                 - k_scav*Fe_3/(60*60*24*365) \
-                    + R_Fe*(export_1()*vol_1 + export_2()*vol_2)/vol_3
-        else:
-            return (psi*(Fe_2 - Fe_3) + k_23*(Fe_2 - Fe_3) + k_13*(Fe_1 - Fe_3))/vol_3 \
-                 - k_scav*complexation(Fe_3, ligand_total_val, beta_val)/(60*60*24*365) \
-                    + R_Fe*(export_1()*vol_1 + export_2()*vol_2)/vol_3
-                
-    ### To find the free ion concentration at any given moment, the following function
-    ### calculates exactly that given our concentration of ligand, metal, and beta constant.
-    ### (via complexation)
+    # Complexation, causes differentiation between total and free iron (or any other metal) ------------------------
     
     def complexation(metal_tot, ligand_tot, beta):
         """
@@ -363,10 +465,12 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
         Float, current concentration of free metal.
 
         """
-        term_1 = (metal_tot - 1 - ligand_tot)/2
-        term_2 = ((beta*(ligand_tot - metal_tot + 1)**2 + 4*metal_tot)/(4*beta))**(1/2)
+        term_1 = (metal_tot - 1/beta - ligand_tot)/2
+        term_2 = ((beta*(ligand_tot - metal_tot + 1/beta)**2 + 4*metal_tot)/(4*beta))**(1/2)
     
         return term_1 + term_2
+    
+    # ...................................................................................
         
     ### Create arrays where the first array depicts the x-axis (time steps) and the three other
     ### arrays depict concentrations of C_1, C_2, and C_3 over the time steps. 
@@ -394,26 +498,31 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
         # Initiate lists that will store the three concentrations, with initial concentrations already
         # in the lists.
     
-    if Fe_1 != None and Fe_2 != None and Fe_3 != None:
+    if use_iron:
         Fe_1_list = [Fe_1,]
         Fe_2_list = [Fe_2,]
         Fe_3_list = [Fe_3,]
-    else:
-        Fe_1_list = [0,]
-        Fe_2_list = [0,]
-        Fe_3_list = [0,]
-        # Initiate lists that will hold concentration values of iron.
+
+    if use_ligand_cycling:
+        L_1_list = [L_1,]
+        L_2_list = [L_2,]
+        L_3_list = [L_3,]
     
-    ## Create Temporary Variables that will store C_1, C_2, C_3, Fe_1, Fe_2, and Fe_3
+    ## Create Temporary Variables that will store C_1, C_2, C_3, Fe_1, Fe_2, and Fe_3, as well as L_1 to L_3
     ## to ensure that the concentrations used for all six time steps happen simultaneously,
     ## i.e. we don't use the concentrations of the next time step to calculate the changes
     ## in the current time step.
     C_1_temp = C_1
     C_2_temp = C_2
     C_3_temp = C_3
-    Fe_1_temp = Fe_1
-    Fe_2_temp = Fe_2
-    Fe_3_temp = Fe_3
+    if use_iron:
+        Fe_1_temp = Fe_1
+        Fe_2_temp = Fe_2
+        Fe_3_temp = Fe_3
+    if use_ligand_cycling:
+        L_1_temp = L_1
+        L_2_temp = L_2
+        L_3_temp = L_3
         
     for t_val in time_axis_array:
         if t_val == 0:
@@ -436,7 +545,7 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
                 # Use Euler Step Function to change value of C_3 by one time step (i.e. dt). Then 
                 # append that value to the C_3_list of concentrations as the concentration for that
                 # given time. 
-            if Fe_1 != None and Fe_2 != None and Fe_3 != None:
+            if use_iron:
                 Fe_1_temp += dFe_1_over_dt()*dt
                 Fe_1_list.append(Fe_1_temp)
                     # Iron in box 1.
@@ -446,29 +555,55 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
                 Fe_3_temp += dFe_3_over_dt()*dt
                 Fe_3_list.append(Fe_3_temp)
                     # Iron in box 3.
-            
-            ## Now update values of C_1 - C_3, Fe_1 - Fe_3 to the updated temp values.
+            if use_ligand_cycling:
+                L_1_temp += dLt_1_over_dt()*dt
+                L_1_list.append(L_1_temp)
+                    # Ligands in box 1.
+                L_2_temp += dLt_2_over_dt()*dt
+                L_2_list.append(L_2_temp)
+                    # Ligands in box 2.
+                L_3_temp += dLt_3_over_dt()*dt
+                L_3_list.append(L_3_temp)
+                    # Ligands in box 3.
+            ## Now update values of C_1 - C_3, Fe_1 - Fe_3, L_1 - L_3 to the updated temp values.
             C_1 = C_1_temp
             C_2 = C_2_temp
             C_3 = C_3_temp
-            Fe_1 = Fe_1_temp
-            Fe_2 = Fe_2_temp
-            Fe_3 = Fe_3_temp
-            
-            # if abs(t_val%1000) < 0.01:
-            #     print(f'C_1 = {C_1}, C_2 = {C_2}, C_3 = {C_3}')
+            if use_iron:
+                Fe_1 = Fe_1_temp
+                Fe_2 = Fe_2_temp
+                Fe_3 = Fe_3_temp
+            if use_ligand_cycling:
+                L_1 = L_1_temp
+                L_2 = L_2_temp
+                L_3 = L_3_temp
             
     C_1_array = np.array(C_1_list)
     C_2_array = np.array(C_2_list)
     C_3_array = np.array(C_3_list)
         # Once the above is complete, we now have three arrays depicting concentrations of C_1, C_2, and C_3
         # over time. 
-    Fe_1_array = np.array(Fe_1_list)
-    Fe_2_array = np.array(Fe_2_list)
-    Fe_3_array = np.array(Fe_3_list)
-    
+    if use_iron:
+        Fe_1_array = np.array(Fe_1_list)
+        Fe_2_array = np.array(Fe_2_list)
+        Fe_3_array = np.array(Fe_3_list)
+    else:
+        Fe_1_array = None
+        Fe_2_array = None
+        Fe_3_array = None
+        
+    if use_ligand_cycling:
+        L_1_array = np.array(L_1_list)
+        L_2_array = np.array(L_2_list)    
+        L_3_array = np.array(L_3_list)
+    else:
+        L_1_array = None
+        L_2_array = None
+        L_3_array = None
+        
     def plot_concentrations(title, element_symbol, time_axis_array, array_of_C_1, array_of_C_2, array_of_C_3, \
-                            array_of_Fe_1, array_of_Fe_2, array_of_Fe_3):
+                            array_of_Fe_1, array_of_Fe_2, array_of_Fe_3, \
+                                array_of_L_1, array_of_L_2, array_of_L_3):
         """
         Plots the concentrations of material in the three boxes and their
         change over time
@@ -485,35 +620,51 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
             None. Plots graph with above information.
     
         """
-
-        fig, nutri_conc = plt.subplots()
-        nutri_conc.set_title(f'{title}')
-        nutri_conc.set_xlabel('Time [log(years)]')
-        nutri_conc.set_ylabel(f'Concentration (mol {element_symbol}_i per cubic meter)')
-        nutri_conc.plot(time_axis_array_log10, array_of_C_1, 'r', label = f'{element_symbol}_1')
-        nutri_conc.plot(time_axis_array_log10, array_of_C_2, 'm', label = f'{element_symbol}_2')
-        nutri_conc.plot(time_axis_array_log10, array_of_C_3, 'b', label = f'{element_symbol}_3')
-        plt.legend(loc = 'best')
-        if array_of_Fe_1.all() != np.array([0,]) and array_of_Fe_2.all() != np.array([0,]) and array_of_Fe_1.all() != np.array([0,]):
-            iron_axis = nutri_conc.twinx()
-            iron_axis.set_ylabel('Concentration of iron per cubic meter \n (in nmol/m3)')
-            iron_axis.plot(time_axis_array_log10, array_of_Fe_1, 'g-.', label = 'Fe_1')
-            iron_axis.plot(time_axis_array_log10, array_of_Fe_2, 'k-.', label = 'Fe_2')
-            iron_axis.plot(time_axis_array_log10, array_of_Fe_3, 'c-.', label = 'Fe_3')
-        # plt.legend(nutri_conc + iron_axis, [nutri_conc.get_label(), iron_axis.get_label()], loc = 'best')
-        plt.legend(loc = 'best')
-        fig.tight_layout()
-        plt.show()
         
+        if one_graph:
+            fig, nutri_conc = plt.subplots()
+            nutri_conc.set_title(f'{title}')
+            nutri_conc.set_xlabel('Time [log(years)]')
+            nutri_conc.set_ylabel(f'Concentration (mol {element_symbol}_i per cubic meter)')
+            nutri_conc.plot(time_axis_array_log10, array_of_C_1, 'r', label = f'{element_symbol}_1')
+            nutri_conc.plot(time_axis_array_log10, array_of_C_2, 'm', label = f'{element_symbol}_2')
+            nutri_conc.plot(time_axis_array_log10, array_of_C_3, 'b', label = f'{element_symbol}_3')
+            plt.legend(loc = 'best')
+            if use_iron:
+                iron_axis = nutri_conc.twinx()
+                iron_axis.set_ylabel('Concentration of iron per cubic meter \n (in nmol/m3)')
+                iron_axis.plot(time_axis_array_log10, array_of_Fe_1, 'g-.', label = 'Fe_1')
+                iron_axis.plot(time_axis_array_log10, array_of_Fe_2, 'k-.', label = 'Fe_2')
+                iron_axis.plot(time_axis_array_log10, array_of_Fe_3, 'c-.', label = 'Fe_3')
+            # plt.legend(nutri_conc + iron_axis, [nutri_conc.get_label(), iron_axis.get_label()], loc = 'best')
+            plt.legend(loc = 'best')
+            fig.tight_layout()
+            plt.show()
+            
+            if use_ligand_cycling:
+                lig_graph, lig = plt.subplots()
+                lig.set_title('Ligand Concentrations Over Time')
+                lig.set_xlabel('Time [log(years)]')
+                lig.set_ylabel(f'Concentration (mol {element_symbol}_i per cubic meter)')
+                lig.plot(time_axis_array_log10, array_of_L_1, 'r', label = 'L_1')
+                lig.plot(time_axis_array_log10, array_of_L_2, 'm', label = 'L_2')
+                lig.plot(time_axis_array_log10, array_of_L_3, 'b', label = 'L_3')
+                plt.legend(loc = 'best')
+                fig.tight_layout()
+                plt.show()
+    
     plot_concentrations(title, element_symbol, time_axis_array, \
                     C_1_array, C_2_array, C_3_array, \
-                        Fe_1_array, Fe_2_array, Fe_3_array)
+                        Fe_1_array, Fe_2_array, Fe_3_array, \
+                            L_1_array, L_2_array, L_3_array)
         # Plotting the concentrations and how they change over time. 
         
 #    return (time_axis_array, (C_1_array, C_2_array, C_3_array), \
 #           (Fe_1_array, Fe_2_array, Fe_3_array))
     
 
+### --------------------------------------------------------------------------------
+### --------------------------------------------------------------------------------
 ### --------------------------------------------------------------------------------
 ### The following section calls the above functions for plotting purposes.
 
@@ -598,11 +749,12 @@ Fe_2_init = 5*10**-10
 Fe_3_init = 5*10**-10
 N_1_to_3 = 30*rho_0*10**(-6)
 
-transport_model_graphing_mult_law = \
-    create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, 0.006849, 10000, \
-                           'Concentrations of N_1, N_2, N_3, Fe_1, Fe_2, Fe_3 w/ exports, \n dt = 2.5 days, variable export rate, \n Michalis-Menten Model, Leibig Limit Approximation \n  ', 'N', \
-                               mic_ment_light_leibig = 1, k_scav = 0.004, mu = 3.858*10**-7, \
-                                   Fe_1 = Fe_1_init, Fe_2 = Fe_2_init, Fe_3 = Fe_3_init)
+# transport_model_graphing_mult_law = \
+#     create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, 0.006849, 10000, \
+#                            'Concentrations of N_1, N_2, N_3, Fe_1, Fe_2, Fe_3 w/ exports, \n dt = 2.5 days, variable export rate, \n Michalis-Menten Model, Leibig Limit Approximation \n  ', 'N', \
+#                                mic_ment_light_leibig = 1, k_scav = 0.004, mu = 3.858*10**-7, \
+#                                    Fe_1 = Fe_1_init, Fe_2 = Fe_2_init, Fe_3 = Fe_3_init, \
+#                                        use_iron = True)
                                         # Time step of 2.5 days
                                         
 # Concentration of total iron is about 1 nanomol per liter (mmol/)
@@ -612,12 +764,26 @@ transport_model_graphing_mult_law = \
 # Michaelis-Menten Model, with Iron and free concentration governed by scavenging of free iron. Fixed ligand concentration and beta value.
 
 ligand_conc = 1*10**-6 # mol/m3
-beta_val_1 = 10**9 * rho_0 # kg/mol, as required by the value earlier.
+beta_val_1 = 10**8 # kg/mol, as required by the value earlier.
+
+# transport_model_graphing_ligand_approach = \
+#         create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, 0.006849, 10000, \
+#                            'Concentrations of N_1, N_2, N_3, Fe_1, Fe_2, Fe_3 w/ exports and complexation, \n dt = 2.5 days, variable export rate, \n ligand concentration = 10**-6, beta = 10**8 (kg per mol) \n Michalis-Menten Model, Leibig Limit Approximation \n  ', 'N', \
+#                                mic_ment_light_leibig = 1, k_scav = 0.19, mu = 3.858*10**-7, \
+#                                    Fe_1 = Fe_1_init, Fe_2 = Fe_2_init, Fe_3 = Fe_3_init, \
+#                                        use_iron = True, \
+#                                        ligand_use = True, ligand_total_val = ligand_conc, beta_val = beta_val_1)
+                                        # Time step of 2.5 days
+                                        
+# -------------------------------------------------------------------------------------------------------------------
+# Michaelis-Menten Model, with Iron and free concentration governed by scavenging of free iron. Variable ligand concentration, but initial concentration of 0.
 
 transport_model_graphing_ligand_approach = \
         create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, 0.006849, 10000, \
-                           'Concentrations of N_1, N_2, N_3, Fe_1, Fe_2, Fe_3 w/ exports and complexation, \n dt = 2.5 days, variable export rate, \n ligand concentration = 10**-6, beta = 10**9 * rho_0 (kg per mol) \n Michalis-Menten Model, Leibig Limit Approximation \n  ', 'N', \
+                           'Concentrations of N_1, N_2, N_3, Fe_1, Fe_2, Fe_3 w/ exports and complexation, \n dt = 2.5 days, variable export rate, \n ligand concentration = 10**-6, beta = 10**8 (kg per mol) \n Michalis-Menten Model, Leibig Limit Approximation \n  ', 'N', \
                                mic_ment_light_leibig = 1, k_scav = 0.19, mu = 3.858*10**-7, \
                                    Fe_1 = Fe_1_init, Fe_2 = Fe_2_init, Fe_3 = Fe_3_init, \
-                                       ligand_use = True, ligand_total_val = ligand_conc, beta_val = beta_val_1)
+                                       use_iron = True, \
+                                       ligand_use = True, ligand_total_val = ligand_conc, beta_val = beta_val_1, \
+                                           use_ligand_cycling = True)
                                         # Time step of 2.5 days
