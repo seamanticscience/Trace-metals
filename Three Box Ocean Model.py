@@ -58,7 +58,7 @@ f_dop = 0.67 # Fraction of particles that makes it into pool of nitrate, unitles
 # Global Values for Ligand Cycling and Microbial Production
 K_I = 45 #W/m2
 gamma = 5*10**(-5)*(106/16) # Units of mol L/(mol N), converted using Redfield Ratio.
-lambda_ligand = gamma/4398
+lambda_ligand = 5*10**(-5)/4398
 
 ### -------------------------------------------------------------------------------------------
 
