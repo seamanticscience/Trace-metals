@@ -782,7 +782,7 @@ transport_model_graphing_ligand_approach = \
         create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, 0.006849, 10000, \
                            'Concentrations of N_1, N_2, N_3, Fe_1, Fe_2, Fe_3 w/ exports and complexation, \n dt = 2.5 days, variable export rate, \n ligand concentration = 10**-6, beta = 10**8 (kg per mol) \n Michalis-Menten Model, Leibig Limit Approximation \n  ', 'N', \
                                mic_ment_light_leibig = 1, k_scav = 0.19, mu = 3.858*10**-7, \
-                                   Fe_1 = Fe_1_init, Fe_2 = Fe_2_init, Fe_3 = Fe_3_init, \
+                                   Fe_1 = 0, Fe_2 = 0, Fe_3 = 0, \
                                        use_iron = True, \
                                        ligand_use = True, ligand_total_val = ligand_conc, beta_val = beta_val_1, \
                                            use_ligand_cycling = True)
