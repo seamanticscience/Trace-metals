@@ -10,6 +10,17 @@ import math
 
 ### -----------------------------------------------------------------------------
 
+## Establishing Special NoneType Class to handle adding two NoneTypes down the road.
+
+class No_obj(object):
+    def __init__(self, name = 'def'):
+        self.name = name
+    def __add__(self, other_object):
+        return None
+    def __mult__(self, other_object):
+        return No_obj()
+
+
 ## Establishing Global Quantities
 
 ## Establishing Dimensions of Three Boxes (all values have units of meters)
@@ -67,10 +78,10 @@ lambda_ligand = 5*10**(-5)/4398
 
 def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_symbol, num_elements, lambda_1 = 0, lambda_2 = 0, \
                            mic_ment_nolight = 0, mic_ment_light_leibig = 0, mic_ment_light_mult_lim = 0, Ibox1 = 35, \
-                               k_scav = 0, mu = 0, Fe_1 = None, Fe_2 = None, Fe_3 = None, \
+                               k_scav = 0, mu = 0, Fe_1 = No_obj(), Fe_2 = No_obj(), Fe_3 = No_obj(), \
                                    use_iron = False, \
                                    ligand_use = False, ligand_total_val = 0, beta_val = 0, \
-                                       L_1 = 0, L_2 = 0, L_3 = 0, \
+                                       L_1 = No_obj(), L_2 = No_obj(), L_3 = No_obj(), \
                                            use_ligand_cycling = False, \
                                                one_graph = True, multi_graph = False):
     """
@@ -121,7 +132,6 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
     
     ## Yet to be implemented.    
     
-
     ## Initiate Time Variables
     
     dt = dt_in_years*60*60*24*365  #Total number of seconds representing a year. 
@@ -143,6 +153,16 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
     # TBD
 
     
+    # Input Concentrations All in a List
+    
+    # input_concentrations = [C_1_input, C_2_input, C_3_input, \
+    #                         Fe_1_input, Fe_2_input, Fe_3_input, \
+    #                             L_1_input, L_2_input, L_3_input]
+    
+    
+    # [C_1_input = C_1, C_2_input = C_2, C_3_input = C_3, \
+    #  Fe_1_input = Fe_1, Fe_2_input = Fe_2, Fe_3_input = Fe_3, \
+    #      L_1_input = L_1, L_2_input = L_2, L_3_input = L_3]
     # Export Production --------------------------------------------------
     
     def export_1(C_1_input = C_1, Fe_1_input = Fe_1):
@@ -161,7 +181,7 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
         global iron_dependent_change_in_C_1
         light_dependent_change_in_C_1 = (Ibox1/(K_sat_l + Ibox1))
         nutrient_dependent_change_in_C_1 = ((C_1_input)/(K_sat_N + C_1_input))
-        if Fe_1_input == None:
+        if Fe_1_input == No_obj():
             iron_dependent_change_in_C_1 = None
         else:
             iron_dependent_change_in_C_1 = (Fe_1_input/(K_sat_Fe + Fe_1_input))
@@ -187,7 +207,7 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
         global iron_dependent_change_in_C_2
         light_dependent_change_in_C_2 = (Ibox2/(K_sat_l + Ibox2))
         nutrient_dependent_change_in_C_2 = ((C_2_input)/(K_sat_N + C_2_input))
-        if Fe_2_input == None:
+        if Fe_2_input == No_obj():
             iron_dependent_change_in_C_2 = None
         else:
             iron_dependent_change_in_C_2 = (Fe_2_input/(K_sat_Fe + Fe_2_input))
@@ -199,7 +219,10 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
             # Exports governed by the Michaelis-Menten model, considering both the Liebig and Multiplicative methods of limitation.    
           
     # Concentration of Nutrients --------------------------------------------------
-    def dC_1_over_dt(C_1_input = C_1, C_2_input = C_2, C_3_input = C_3, Fe_1_input = Fe_1):
+    def dC_1_over_dt(C_1_input = C_1, C_2_input = C_2, C_3_input = C_3, \
+                      Fe_1_input = Fe_1, Fe_2_input = Fe_2, Fe_3_input = Fe_3, \
+                          L_1_input = L_1, L_2_input = L_2, L_3_input = L_3):
+
         """
         Calculates change in concentration of C_1 per cubic meter, in units of 
         moles of C_1 per cubic meter per unit time.
@@ -223,7 +246,9 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
         # Line 3: Amount of matter exported according to the given export function.
                 
                     
-    def dC_2_over_dt(C_1_input = C_1, C_2_input = C_2, C_3_input = C_3, Fe_2_input = Fe_2):
+    def dC_2_over_dt(C_1_input = C_1, C_2_input = C_2, C_3_input = C_3, \
+                      Fe_1_input = Fe_1, Fe_2_input = Fe_2, Fe_3_input = Fe_3, \
+                          L_1_input = L_1, L_2_input = L_2, L_3_input = L_3):
         """
         Calculates change in concentration of C_2 per cubic meter, in units of 
         moles of C_2 per cubic meter per unit time.
@@ -246,7 +271,9 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
         # Line 2: Given fixed export rate lambda_2, considers the box's export rate dependent on nutrient concentration in given box.
         # Line 3: Amount of matter exported according to the given export function.
             
-    def dC_3_over_dt(C_1_input = C_1, C_2_input = C_2, C_3_input = C_3, Fe_1_input = Fe_1, Fe_2_input = Fe_2):
+    def dC_3_over_dt(C_1_input = C_1, C_2_input = C_2, C_3_input = C_3, \
+                      Fe_1_input = Fe_1, Fe_2_input = Fe_2, Fe_3_input = Fe_3, \
+                          L_1_input = L_1, L_2_input = L_2, L_3_input = L_3):
         """
         Calculates change in concentration of C_3 per cubic meter, in units of 
         moles of C_3 per cubic meter per unit time.
@@ -272,7 +299,9 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
 
     # Concentration of Iron (or any trace metal in fact) -----------------------------
     
-    def dFe_1_over_dt(Fe_1_input = Fe_1, Fe_2_input = Fe_2, Fe_3_input = Fe_3, C_1_input = C_1, L_1_input = L_1):
+    def dFe_1_over_dt(C_1_input = C_1, C_2_input = C_2, C_3_input = C_3, \
+                      Fe_1_input = Fe_1, Fe_2_input = Fe_2, Fe_3_input = Fe_3, \
+                          L_1_input = L_1, L_2_input = L_2, L_3_input = L_3):
         """
         Calculates change in concentration of Fe_1_input per cubic meter, in units of 
         moles of Fe_1 per cubic meter per unit time.
@@ -291,7 +320,9 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
             # quantity to mol Fe per second, divide by molar mass as well as the total number
             # of seconds in a year.
             
-        if not ligand_use:
+        if not use_iron:
+            return No_obj()            
+        elif not ligand_use:
             return (psi*(Fe_3_input - Fe_1_input) + k_31*(Fe_3_input - Fe_1_input) + k_21*(Fe_2_input - Fe_1_input))/vol_1 + \
                 alpha*F_in1/dz_1 - k_scav*Fe_1_input/(60*60*24*365) - R_Fe*export_1(C_1_input, Fe_1_input)
         elif not use_ligand_cycling:
@@ -305,7 +336,9 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
                 # Line 2: First term represents source, second term represents sink (in terms of being scavenged)
                     # Third term represents amount being used up ('biological utilization' as in Parekh, 2004)
 
-    def dFe_2_over_dt(Fe_1_input = Fe_1, Fe_2_input = Fe_2, Fe_3_input = Fe_3, C_2_input = C_2, L_2_input = L_2):
+    def dFe_2_over_dt(C_1_input = C_1, C_2_input = C_2, C_3_input = C_3, \
+                      Fe_1_input = Fe_1, Fe_2_input = Fe_2, Fe_3_input = Fe_3, \
+                          L_1_input = L_1, L_2_input = L_2, L_3_input = L_3):
         """
         Calculates change in concentration of Fe_2 per cubic meter, in units of 
         moles of Fe_2 per cubic meter per unit time.
@@ -324,7 +357,9 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
             # quantity to mol Fe per second, divide by molar mass as well as the total number
             # of seconds in a year.
             
-        if not ligand_use:
+        if not use_iron:
+            return No_obj()
+        elif not ligand_use:
             return (psi*(Fe_1_input - Fe_2_input) + k_12*(Fe_1_input - Fe_2_input) + k_32*(Fe_3_input - Fe_2_input))/vol_2 + \
                 alpha*F_in2/dz_2 - k_scav*Fe_2_input/(60*60*24*365) - R_Fe*export_2(C_2_input, Fe_2_input)
         elif not use_ligand_cycling:
@@ -334,7 +369,9 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
              return (psi*(Fe_1_input - Fe_2_input) + k_12*(Fe_1_input - Fe_2_input) + k_32*(Fe_3_input - Fe_2_input))/vol_2 + \
                 alpha*F_in2/dz_2 - k_scav*complexation(Fe_2_input, L_2_input, beta_val)/(60*60*24*365) - R_Fe*export_2(C_2_input, Fe_2_input)           
         
-    def dFe_3_over_dt(Fe_1_input = Fe_1, Fe_2_input = Fe_2, Fe_3_input = Fe_3, C_1_input = C_1, C_2_input = C_2, L_1_input = L_1, L_2_input = L_2, L_3_input = L_3):
+    def dFe_3_over_dt(C_1_input = C_1, C_2_input = C_2, C_3_input = C_3, \
+                      Fe_1_input = Fe_1, Fe_2_input = Fe_2, Fe_3_input = Fe_3, \
+                          L_1_input = L_1, L_2_input = L_2, L_3_input = L_3):
         """
         Calculates change in concentration of Fe_3 per cubic meter, in units of 
         moles of Fe_3 per cubic meter per unit time.
@@ -347,8 +384,9 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
         Number quantity reflecting change of Fe_2 per unit time, governed by the flow
         rates and the concentrations at the given times.
         """
-
-        if not ligand_use:        
+        if not use_iron:
+            return No_obj()
+        elif not ligand_use:        
             return (psi*(Fe_2_input - Fe_3_input) + k_23*(Fe_2_input - Fe_3_input) + k_13*(Fe_1_input - Fe_3_input))/vol_3 \
                  - k_scav*Fe_3_input/(60*60*24*365) \
                     + R_Fe*(export_1(C_1_input, Fe_1_input)*vol_1 + export_2(C_2_input, Fe_2_input)*vol_2)/vol_3
@@ -367,7 +405,9 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
     
     # Concentration of Ligands -----------------------------------------------------
     
-    def dLt_1_over_dt(L_1_input = L_1, L_2_input = L_2, L_3_input = L_3, C_1_input = C_1, Fe_1_input = Fe_1):
+    def dLt_1_over_dt(C_1_input = C_1, C_2_input = C_2, C_3_input = C_3, \
+                      Fe_1_input = Fe_1, Fe_2_input = Fe_2, Fe_3_input = Fe_3, \
+                          L_1_input = L_1, L_2_input = L_2, L_3_input = L_3):
         """
         Calculates change in total ligand in specified box in units of mols per cubic meter.
         Addresses ligands cycling through the three boxes, as well as sources/sinks.
@@ -381,6 +421,8 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
         Value in units of mols per cubic meter per second (changing concentration of ligand)
 
         """
+        if not ligand_use:
+            return No_obj()
         return (psi*(L_3_input - L_1_input) + k_31*(L_3_input - L_1_input) + k_21*(L_2_input - L_1_input))/vol_1 \
             + gamma*export_1(C_1_input, Fe_1_input) \
                 - lambda_ligand*L_1_input
@@ -389,7 +431,9 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
                     # Line 2: Source (with appropriate gamma)
                     # Line 3: Loss of ligands to degredation.
                 
-    def dLt_2_over_dt(L_1_input = L_1, L_2_input = L_2, L_3_input = L_3, C_2_input = C_2, Fe_2_input = Fe_2):
+    def dLt_2_over_dt(C_1_input = C_1, C_2_input = C_2, C_3_input = C_3, \
+                      Fe_1_input = Fe_1, Fe_2_input = Fe_2, Fe_3_input = Fe_3, \
+                          L_1_input = L_1, L_2_input = L_2, L_3_input = L_3):
         """
         Calculates change in total ligand in specified box in units of mols per cubic meter.
         Addresses ligands cycling through the three boxes, as well as sources/sinks.
@@ -402,7 +446,9 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
         -------
         Value in units of mols per cubic meter per second (changing concentration of ligand)
 
-        """        
+        """     
+        if not ligand_use:
+            return No_obj()
         return (psi*(L_1_input - L_2_input) + k_12*(L_1_input - L_2_input) + k_32*(L_3_input - L_2_input))/vol_2 \
             + gamma*export_2(C_2_input, Fe_2_input) \
                 - lambda_ligand*L_2_input
@@ -411,7 +457,9 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
                     # Line 2: Source (with appropriate gamma)
                     # Line 3: Loss of ligands to degredation.
                     
-    def dLt_3_over_dt(L_1_input = L_1, L_2_input = L_2, L_3_input = L_3, C_1_input = C_1, C_2_input = C_2, Fe_1_input = Fe_1, Fe_2_input = Fe_2):
+    def dLt_3_over_dt(C_1_input = C_1, C_2_input = C_2, C_3_input = C_3, \
+                      Fe_1_input = Fe_1, Fe_2_input = Fe_2, Fe_3_input = Fe_3, \
+                          L_1_input = L_1, L_2_input = L_2, L_3_input = L_3):
         """
         Calculates change in total ligand in specified box in units of mols per cubic meter.
         Addresses ligands cycling through the three boxes, as well as sources/sinks.
@@ -425,6 +473,8 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
         Value in units of mols per cubic meter per second (changing concentration of ligand)
 
         """        
+        if not ligand_use:
+            return No_obj()
         return (psi*(L_2_input - L_3_input) + k_23*(L_2_input - L_3_input) + k_13*(L_1_input - L_3_input))/vol_3 \
             - lambda_ligand/100*L_3_input \
                 + gamma/vol_3*(export_1(C_1_input, Fe_1_input)*vol_1 + export_2(C_2_input, Fe_2_input)*vol_2)
@@ -483,109 +533,61 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
     
     ## Create y-axis arrays (C_1, C_2, and C_3)
     
-    # all_concentration_feature_vector = np.full((len(time_axis_array), num_elements), 0, dtype = float)
+    acfv = np.full((len(time_axis_array), 9), 0)
+        # NOTE: 'acfv' stands for 'all concentration feature vector'.
+        
+    # Initialize initial values of elements to be used (Depending on Passed-in Input Parameter)
     
-    C_1_list = [C_1,]
-    C_2_list = [C_2,]
-    C_3_list = [C_3,]
-        # Initiate lists that will store the three concentrations, with initial concentrations already
-        # in the lists.
+    list_of_initial_concentrations = [C_1, C_2, C_3, Fe_1, Fe_2, Fe_3, L_1, L_2, L_3]
+    for conc in list_of_initial_concentrations:
+        if conc == No_obj:
+            conc = float('inf')
     
-    if use_iron:
-        Fe_1_list = [Fe_1,]
-        Fe_2_list = [Fe_2,]
-        Fe_3_list = [Fe_3,]
+    feature_vector_height = 0
+    initial_concentration_row = np.array([C_1, C_2, C_3, Fe_1, Fe_2, Fe_3, L_1, L_2, L_3])
+    # np.array([conc for conc in [C_1, C_2, C_3, Fe_1, Fe_2, Fe_3, L_1, L_2, L_3] if conc is not None])
+    acfv[0, :] = initial_concentration_row
+        # For given row in the blank all_concentration_feature_vector, fill that row in
+        # with the given concentrations. This fills out the first row. 
+        
+    # Initialize list of all arguments *derived from the numpy array* to be used in following loop.
     
-    if use_ligand_cycling:
-        L_1_list = [L_1,]
-        L_2_list = [L_2,]
-        L_3_list = [L_3,]
-    
-    ## Create Temporary Variables that will store C_1, C_2, C_3, Fe_1, Fe_2, and Fe_3, as well as L_1 to L_3
-    ## to ensure that the concentrations used for all six time steps happen simultaneously,
-    ## i.e. we don't use the concentrations of the next time step to calculate the changes
-    ## in the current time step.
-    
-    C_1_temp, C_2_temp, C_3_temp = C_1, C_2, C_3
+    def crr(t_val_temp):
+        """
+        Returns current row of concentrations in the acfv. 'crr' represents 'current row return'
 
-    if use_iron:
-        Fe_1_temp, Fe_2_temp, Fe_3_temp = Fe_1, Fe_2, Fe_3
-        
-    if use_ligand_cycling:
-        L_1_temp, L_2_temp, L_3_temp = L_1, L_2, L_3
-        
-    # feature_vector_height = 0
+        Parameters
+        ----------
+        t_val_temp : Index value of current 
 
-    for t_val in time_axis_array[1:]:
-            C_1_temp += dC_1_over_dt(C_1, C_2, C_3, Fe_1)*dt
-            C_1_list.append(C_1_temp)
-                # Use Euler Step Function to change value of C_1 by one time step (i.e. dt). Then 
-                # append that value to the C_1_list of concentrations as the concentration for that
-                # given time. 
-            C_2_temp += dC_2_over_dt(C_1, C_2, C_3, Fe_2)*dt
-            C_2_list.append(C_2_temp)
-                # Use Euler Step Function to change value of C_2 by one time step (i.e. dt). Then 
-                # append that value to the C_2_list of concentrations as the concentration for that
-                # given time. 
-            C_3_temp += dC_3_over_dt(C_1, C_2, C_3, Fe_1, Fe_2)*dt
-            C_3_list.append(C_3_temp)
-                # Use Euler Step Function to change value of C_3 by one time step (i.e. dt). Then 
-                # append that value to the C_3_list of concentrations as the concentration for that
-                # given time. 
-            if use_iron:
-                Fe_1_temp += dFe_1_over_dt(Fe_1, Fe_2, Fe_3, C_1, L_1)*dt
-                Fe_1_list.append(Fe_1_temp)
-                    # Iron in box 1.
-                Fe_2_temp += dFe_2_over_dt(Fe_1, Fe_2, Fe_3, C_2, L_2)*dt
-                Fe_2_list.append(Fe_2_temp)
-                    # Iron in box 2.
-                Fe_3_temp += dFe_3_over_dt(Fe_1, Fe_2, Fe_3, C_1, C_2, L_1, L_2, L_3)*dt
-                Fe_3_list.append(Fe_3_temp)
-                    # Iron in box 3.
-            if use_ligand_cycling:
-                L_1_temp += dLt_1_over_dt(L_1, L_2, L_3, C_1, Fe_1)*dt
-                L_1_list.append(L_1_temp)
-                    # Ligands in box 1.
-                L_2_temp += dLt_2_over_dt(L_1, L_2, L_3, C_2, Fe_2)*dt
-                L_2_list.append(L_2_temp)
-                    # Ligands in box 2.
-                L_3_temp += dLt_3_over_dt(L_1, L_2, L_3, C_1, C_2, Fe_1, Fe_2)*dt
-                L_3_list.append(L_3_temp)
-                    # Ligands in box 3.
-            ## Now update values of C_1 - C_3, Fe_1 - Fe_3, L_1 - L_3 to the updated temp values.
-            C_1, C_2, C_3 = C_1_temp, C_2_temp, C_3_temp
-            if use_iron:
-                Fe_1, Fe_2, Fe_3 = Fe_1_temp, Fe_2_temp, Fe_3_temp
-            if use_ligand_cycling:
-                L_1, L_2, L_3 = L_1_temp, L_2_temp, L_3_temp
-            
+        Returns
+        -------
+        List of values in current row.
+
+        """
+        
+        return [acfv[t_val_temp, 0], acfv[t_val_index, 1], acfv[t_val_index, 2], \
+                acfv[t_val_index, 3], acfv[t_val_index, 4], acfv[t_val_index, 5], \
+                    acfv[t_val_index, 6], acfv[t_val_index, 7], acfv[t_val_index, 8]]
     
-    C_1_array = np.array(C_1_list)
-    C_2_array = np.array(C_2_list)
-    C_3_array = np.array(C_3_list)
-        # Once the above is complete, we now have three arrays depicting concentrations of C_1, C_2, and C_3
-        # over time. 
-    if use_iron:
-        Fe_1_array = np.array(Fe_1_list)
-        Fe_2_array = np.array(Fe_2_list)
-        Fe_3_array = np.array(Fe_3_list)
-    else:
-        Fe_1_array = None
-        Fe_2_array = None
-        Fe_3_array = None
+    for t_val_index in range(len(time_axis_array[1:])):
+        feature_vector_height += 1
+        acfv[feature_vector_height, :] = acfv[t_val_index, :] \
+                + np.array([dC_1_over_dt(', '.join(crr(t_val_index)))*dt, \
+                            dC_2_over_dt(', '.join(crr(t_val_index)))*dt, \
+                            dC_3_over_dt(', '.join(crr(t_val_index)))*dt, \
+                            dFe_1_over_dt(', '.join(crr(t_val_index)))*dt, \
+                            dFe_2_over_dt(', '.join(crr(t_val_index)))*dt, \
+                            dFe_3_over_dt(', '.join(crr(t_val_index)))*dt, \
+                            dLt_1_over_dt(', '.join(crr(t_val_index)))*dt, \
+                            dLt_2_over_dt(', '.join(crr(t_val_index)))*dt, \
+                            dLt_3_over_dt(', '.join(crr(t_val_index)))*dt])
+    
+    # Remove columns with values of infinity.
+    
+    
         
-    if use_ligand_cycling:
-        L_1_array = np.array(L_1_list)
-        L_2_array = np.array(L_2_list)    
-        L_3_array = np.array(L_3_list)
-    else:
-        L_1_array = None
-        L_2_array = None
-        L_3_array = None
-        
-    def plot_concentrations(title, element_symbol, time_axis_array, array_of_C_1, array_of_C_2, array_of_C_3, \
-                            array_of_Fe_1, array_of_Fe_2, array_of_Fe_3, \
-                                array_of_L_1, array_of_L_2, array_of_L_3):
+    def plot_concentrations(title, element_symbol, time_axis_array, acfv_p):
         """
         Plots the concentrations of material in the three boxes and their
         change over time
@@ -594,58 +596,234 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
         -----------
             title: an str object titling the graph
             time_array: array of ints representing the time scale of the graph.
-            array_of_C_1: array of numbers detailing levels of C_1 over time.
-            array_of_C_2 and array_of_C_3: as detailed above.
+            acfv: all_concentration_feature_vector
         
         Returns:
         -------
             None. Plots graph with above information.
     
         """
+        conc_name_list = [C_1, C_2, C_3, Fe_1, Fe_2, Fe_3, L_1, L_2, L_3]
+        color_list = ['r', 'g', 'b', 'm', 'k', 'c', 'r-', 'g-', 'b-', 'm-']
+        
+        acfv_t_p = acfv_p.transpose()
+        # Take transpose so that each row now corresponds to each concentration.
         
         if one_graph:
             fig, nutri_conc = plt.subplots()
             nutri_conc.set_title(f'{title}')
             nutri_conc.set_xlabel('Time [log(years)]')
-            nutri_conc.set_ylabel(f'Concentration (mol {element_symbol}_i per cubic meter)')
-            nutri_conc.plot(time_axis_array_log10, array_of_C_1, 'r', label = f'{element_symbol}_1')
-            nutri_conc.plot(time_axis_array_log10, array_of_C_2, 'm', label = f'{element_symbol}_2')
-            nutri_conc.plot(time_axis_array_log10, array_of_C_3, 'b', label = f'{element_symbol}_3')
-            plt.legend(loc = 'best')
-            if use_iron:
+            nutri_conc.set_ylabel('Concentration (mol per cubic meter)')
+            if use_iron:                
                 iron_axis = nutri_conc.twinx()
                 iron_axis.set_ylabel('Concentration of iron per cubic meter \n (in nmol/m3)')
-                iron_axis.plot(time_axis_array_log10, array_of_Fe_1, 'g-.', label = 'Fe_1')
-                iron_axis.plot(time_axis_array_log10, array_of_Fe_2, 'k-.', label = 'Fe_2')
-                iron_axis.plot(time_axis_array_log10, array_of_Fe_3, 'c-.', label = 'Fe_3')
-            # plt.legend(nutri_conc + iron_axis, [nutri_conc.get_label(), iron_axis.get_label()], loc = 'best')
-            plt.legend(loc = 'best')
-            fig.tight_layout()
-            plt.show()
-            
-            if use_ligand_cycling:
+            if ligand_use:
                 lig_graph, lig = plt.subplots()
                 lig.set_title('Ligand Concentrations Over Time')
                 lig.set_xlabel('Time [log(years)]')
-                lig.set_ylabel(f'Concentration (mol {element_symbol}_i per cubic meter)')
-                lig.plot(time_axis_array_log10, array_of_L_1, 'r', label = 'L_1')
-                lig.plot(time_axis_array_log10, array_of_L_2, 'm', label = 'L_2')
-                lig.plot(time_axis_array_log10, array_of_L_3, 'b', label = 'L_3')
-                plt.legend(loc = 'best')
+                lig.set_ylabel('Concentration (mol per cubic meter)')
+            for conc_index in range(conc_name_list):
+                if conc_index <= 2:
+                    nutri_conc.plot(time_axis_array_log10, acfv_t_p[conc_index, :], color_list[conc_index], label = f'{conc_name_list[conc_index]}')
+                if 3 <= conc_index <= 5 and use_iron:
+                    iron_axis.plot(time_axis_array_log10, acfv_t_p[conc_index, :], color_list[conc_index], label = f'{conc_name_list[conc_index]}')
+                if 6 <= conc_index <= 8 and ligand_use:
+                    lig.plot(time_axis_array_log10, acfv_t_p[conc_index, :], color_list[conc_index], label = f'{conc_name_list[conc_index]}')
+
+            nutri_conc.legend(loc = 'best')
+            if use_iron:
+                iron_axis.legend(loc = 'best')
+            fig.tight_layout()
+            plt.show()
+            
+            if ligand_use:
+                lig.legend(loc = 'best')
                 fig.tight_layout()
                 plt.show()
-        if multi_graph:
-            nutrient_graph, nutri_conc = plt.subplots()
-            nutri_conc.set_title('Concentrations of N_1, N_2, and N_3 wrt Time n/ (on log scale)')
-            nutri_conc.set_xlabel('Time [log(years)]')
-            nutri_conc.set_ylabel('Concentration (mol N_i per cubic meter)')
+                
+    plot_concentrations(title, element_symbol, time_axis_array, acfv)           
+                
+            # # plt.legend(nutri_conc + iron_axis, [nutri_conc.get_label(), iron_axis.get_label()], loc = 'best')
+            # plt.legend(loc = 'best')
+            # fig.tight_layout()
+            # plt.show()
+            
+            # if use_ligand_cycling:
+            #     lig.plot(time_axis_array_log10, array_of_L_1, 'r', label = 'L_1')
+            #     lig.plot(time_axis_array_log10, array_of_L_2, 'm', label = 'L_2')
+            #     lig.plot(time_axis_array_log10, array_of_L_3, 'b', label = 'L_3')
+            #     plt.legend(loc = 'best')
+            #     fig.tight_layout()
+            #     plt.show()
+            
+        # if multi_graph:
+        #     nutrient_graph, nutri_conc = plt.subplots()
+        #     nutri_conc.set_title('Concentrations of N_1, N_2, and N_3 wrt Time n/ (on log scale)')
+        #     nutri_conc.set_xlabel('Time [log(years)]')
+        #     nutri_conc.set_ylabel('Concentration (mol N_i per cubic meter)')
+    
+# ----------------------------------------
+    
+    # C_1_list = [C_1,]
+    # C_2_list = [C_2,]
+    # C_3_list = [C_3,]
+    #     # Initiate lists that will store the three concentrations, with initial concentrations already
+    #     # in the lists.
+    
+    # if use_iron:
+    #     Fe_1_list = [Fe_1,]
+    #     Fe_2_list = [Fe_2,]
+    #     Fe_3_list = [Fe_3,]
+    
+    # if use_ligand_cycling:
+    #     L_1_list = [L_1,]
+    #     L_2_list = [L_2,]
+    #     L_3_list = [L_3,]
+    
+    # ## Create Temporary Variables that will store C_1, C_2, C_3, Fe_1, Fe_2, and Fe_3, as well as L_1 to L_3
+    # ## to ensure that the concentrations used for all six time steps happen simultaneously,
+    # ## i.e. we don't use the concentrations of the next time step to calculate the changes
+    # ## in the current time step.
+    
+    # C_1_temp, C_2_temp, C_3_temp = C_1, C_2, C_3
+
+    # if use_iron:
+    #     Fe_1_temp, Fe_2_temp, Fe_3_temp = Fe_1, Fe_2, Fe_3
+        
+    # if use_ligand_cycling:
+    #     L_1_temp, L_2_temp, L_3_temp = L_1, L_2, L_3
+    
+
+    # for t_val in time_axis_array[1:]:
+    #         C_1_temp += dC_1_over_dt(C_1, C_2, C_3, Fe_1)*dt
+    #         C_1_list.append(C_1_temp)
+    #             # Use Euler Step Function to change value of C_1 by one time step (i.e. dt). Then 
+    #             # append that value to the C_1_list of concentrations as the concentration for that
+    #             # given time. 
+    #         C_2_temp += dC_2_over_dt(C_1, C_2, C_3, Fe_2)*dt
+    #         C_2_list.append(C_2_temp)
+    #             # Use Euler Step Function to change value of C_2 by one time step (i.e. dt). Then 
+    #             # append that value to the C_2_list of concentrations as the concentration for that
+    #             # given time. 
+    #         C_3_temp += dC_3_over_dt(C_1, C_2, C_3, Fe_1, Fe_2)*dt
+    #         C_3_list.append(C_3_temp)
+    #             # Use Euler Step Function to change value of C_3 by one time step (i.e. dt). Then 
+    #             # append that value to the C_3_list of concentrations as the concentration for that
+    #             # given time. 
+    #         if use_iron:
+    #             Fe_1_temp += dFe_1_over_dt(Fe_1, Fe_2, Fe_3, C_1, L_1)*dt
+    #             Fe_1_list.append(Fe_1_temp)
+    #                 # Iron in box 1.
+    #             Fe_2_temp += dFe_2_over_dt(Fe_1, Fe_2, Fe_3, C_2, L_2)*dt
+    #             Fe_2_list.append(Fe_2_temp)
+    #                 # Iron in box 2.
+    #             Fe_3_temp += dFe_3_over_dt(Fe_1, Fe_2, Fe_3, C_1, C_2, L_1, L_2, L_3)*dt
+    #             Fe_3_list.append(Fe_3_temp)
+    #                 # Iron in box 3.
+    #         if use_ligand_cycling:
+    #             L_1_temp += dLt_1_over_dt(L_1, L_2, L_3, C_1, Fe_1)*dt
+    #             L_1_list.append(L_1_temp)
+    #                 # Ligands in box 1.
+    #             L_2_temp += dLt_2_over_dt(L_1, L_2, L_3, C_2, Fe_2)*dt
+    #             L_2_list.append(L_2_temp)
+    #                 # Ligands in box 2.
+    #             L_3_temp += dLt_3_over_dt(L_1, L_2, L_3, C_1, C_2, Fe_1, Fe_2)*dt
+    #             L_3_list.append(L_3_temp)
+    #                 # Ligands in box 3.
+    #         ## Now update values of C_1 - C_3, Fe_1 - Fe_3, L_1 - L_3 to the updated temp values.
+    #         C_1, C_2, C_3 = C_1_temp, C_2_temp, C_3_temp
+    #         if use_iron:
+    #             Fe_1, Fe_2, Fe_3 = Fe_1_temp, Fe_2_temp, Fe_3_temp
+    #         if use_ligand_cycling:
+    #             L_1, L_2, L_3 = L_1_temp, L_2_temp, L_3_temp
+            
+    
+    # C_1_array = np.array(C_1_list)
+    # C_2_array = np.array(C_2_list)
+    # C_3_array = np.array(C_3_list)
+    #     # Once the above is complete, we now have three arrays depicting concentrations of C_1, C_2, and C_3
+    #     # over time. 
+    # if use_iron:
+    #     Fe_1_array = np.array(Fe_1_list)
+    #     Fe_2_array = np.array(Fe_2_list)
+    #     Fe_3_array = np.array(Fe_3_list)
+    # else:
+    #     Fe_1_array = None
+    #     Fe_2_array = None
+    #     Fe_3_array = None
+        
+    # if use_ligand_cycling:
+    #     L_1_array = np.array(L_1_list)
+    #     L_2_array = np.array(L_2_list)    
+    #     L_3_array = np.array(L_3_list)
+    # else:
+    #     L_1_array = None
+    #     L_2_array = None
+    #     L_3_array = None
+        
+    # def plot_concentrations(title, element_symbol, time_axis_array, array_of_C_1, array_of_C_2, array_of_C_3, \
+    #                         array_of_Fe_1, array_of_Fe_2, array_of_Fe_3, \
+    #                             array_of_L_1, array_of_L_2, array_of_L_3):
+    #     """
+    #     Plots the concentrations of material in the three boxes and their
+    #     change over time
+    
+    #     Parameters:
+    #     -----------
+    #         title: an str object titling the graph
+    #         time_array: array of ints representing the time scale of the graph.
+    #         array_of_C_1: array of numbers detailing levels of C_1 over time.
+    #         array_of_C_2 and array_of_C_3: as detailed above.
+        
+    #     Returns:
+    #     -------
+    #         None. Plots graph with above information.
+    
+    #     """
+        
+    #     if one_graph:
+    #         fig, nutri_conc = plt.subplots()
+    #         nutri_conc.set_title(f'{title}')
+    #         nutri_conc.set_xlabel('Time [log(years)]')
+    #         nutri_conc.set_ylabel(f'Concentration (mol {element_symbol}_i per cubic meter)')
+    #         nutri_conc.plot(time_axis_array_log10, array_of_C_1, 'r', label = f'{element_symbol}_1')
+    #         nutri_conc.plot(time_axis_array_log10, array_of_C_2, 'm', label = f'{element_symbol}_2')
+    #         nutri_conc.plot(time_axis_array_log10, array_of_C_3, 'b', label = f'{element_symbol}_3')
+    #         plt.legend(loc = 'best')
+    #         if use_iron:
+    #             iron_axis = nutri_conc.twinx()
+    #             iron_axis.set_ylabel('Concentration of iron per cubic meter \n (in nmol/m3)')
+    #             iron_axis.plot(time_axis_array_log10, array_of_Fe_1, 'g-.', label = 'Fe_1')
+    #             iron_axis.plot(time_axis_array_log10, array_of_Fe_2, 'k-.', label = 'Fe_2')
+    #             iron_axis.plot(time_axis_array_log10, array_of_Fe_3, 'c-.', label = 'Fe_3')
+    #         # plt.legend(nutri_conc + iron_axis, [nutri_conc.get_label(), iron_axis.get_label()], loc = 'best')
+    #         plt.legend(loc = 'best')
+    #         fig.tight_layout()
+    #         plt.show()
+            
+    #         if use_ligand_cycling:
+    #             lig_graph, lig = plt.subplots()
+    #             lig.set_title('Ligand Concentrations Over Time')
+    #             lig.set_xlabel('Time [log(years)]')
+    #             lig.set_ylabel(f'Concentration (mol {element_symbol}_i per cubic meter)')
+    #             lig.plot(time_axis_array_log10, array_of_L_1, 'r', label = 'L_1')
+    #             lig.plot(time_axis_array_log10, array_of_L_2, 'm', label = 'L_2')
+    #             lig.plot(time_axis_array_log10, array_of_L_3, 'b', label = 'L_3')
+    #             plt.legend(loc = 'best')
+    #             fig.tight_layout()
+    #             plt.show()
+    #     if multi_graph:
+    #         nutrient_graph, nutri_conc = plt.subplots()
+    #         nutri_conc.set_title('Concentrations of N_1, N_2, and N_3 wrt Time n/ (on log scale)')
+    #         nutri_conc.set_xlabel('Time [log(years)]')
+    #         nutri_conc.set_ylabel('Concentration (mol N_i per cubic meter)')
             
             
     
-    plot_concentrations(title, element_symbol, time_axis_array, \
-                    C_1_array, C_2_array, C_3_array, \
-                        Fe_1_array, Fe_2_array, Fe_3_array, \
-                            L_1_array, L_2_array, L_3_array)
+    # plot_concentrations(title, element_symbol, time_axis_array, \
+    #                 C_1_array, C_2_array, C_3_array, \
+    #                     Fe_1_array, Fe_2_array, Fe_3_array, \
+    #                         L_1_array, L_2_array, L_3_array)
         # Plotting the concentrations and how they change over time. 
         
 #    return (time_axis_array, (C_1_array, C_2_array, C_3_array), \
@@ -738,12 +916,12 @@ Fe_2_init = 5*10**-10
 Fe_3_init = 5*10**-10
 N_1_to_3 = 30*rho_0*10**(-6)
 
-# transport_model_graphing_mult_law = \
-#     create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, 0.006849, 10000, \
-#                            'Concentrations of N_1, N_2, N_3, Fe_1, Fe_2, Fe_3 w/ exports, \n dt = 2.5 days, variable export rate, \n Michalis-Menten Model, Leibig Limit Approximation \n  ', 'N', 6, \
-#                                mic_ment_light_leibig = 1, k_scav = 0.004, mu = 3.858*10**-7, \
-#                                    Fe_1 = Fe_1_init, Fe_2 = Fe_2_init, Fe_3 = Fe_3_init, \
-#                                        use_iron = True)
+transport_model_graphing_mult_law = \
+    create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, 0.006849, 10000, \
+                            'Concentrations of N_1, N_2, N_3, Fe_1, Fe_2, Fe_3 w/ exports, \n dt = 2.5 days, variable export rate, \n Michalis-Menten Model, Leibig Limit Approximation \n  ', 'N', 6, \
+                                mic_ment_light_leibig = 1, k_scav = 0.004, mu = 3.858*10**-7, \
+                                    Fe_1 = Fe_1_init, Fe_2 = Fe_2_init, Fe_3 = Fe_3_init, \
+                                        use_iron = True)
                                         # Time step of 2.5 days
                                         
 # Concentration of total iron is about 1 nanomol per liter (mmol/)
@@ -755,13 +933,13 @@ N_1_to_3 = 30*rho_0*10**(-6)
 ligand_conc = 1*10**-6 # mol/m3
 beta_val_1 = 10**8 # kg/mol, as required by the value earlier.
 
-# transport_model_graphing_ligand_approach = \
-#         create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, 0.006849, 10000, \
-#                            'Concentrations of N_1, N_2, N_3, Fe_1, Fe_2, Fe_3 w/ exports and complexation, \n dt = 2.5 days, variable export rate, \n ligand concentration = 10**-6, beta = 10**8 (kg per mol) \n Michalis-Menten Model, Leibig Limit Approximation \n  ', 'N', 6, \
-#                                mic_ment_light_leibig = 1, k_scav = 0.19, mu = 3.858*10**-7, \
-#                                    Fe_1 = Fe_1_init, Fe_2 = Fe_2_init, Fe_3 = Fe_3_init, \
-#                                        use_iron = True, \
-#                                        ligand_use = True, ligand_total_val = ligand_conc, beta_val = beta_val_1)
+transport_model_graphing_ligand_approach = \
+        create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, 0.006849, 10000, \
+                            'Concentrations of N_1, N_2, N_3, Fe_1, Fe_2, Fe_3 w/ exports and complexation, \n dt = 2.5 days, variable export rate, \n ligand concentration = 10**-6, beta = 10**8 (kg per mol) \n Michalis-Menten Model, Leibig Limit Approximation \n  ', 'N', 6, \
+                                mic_ment_light_leibig = 1, k_scav = 0.19, mu = 3.858*10**-7, \
+                                    Fe_1 = Fe_1_init, Fe_2 = Fe_2_init, Fe_3 = Fe_3_init, \
+                                        use_iron = True, \
+                                            ligand_use = True, ligand_total_val = ligand_conc, beta_val = beta_val_1)
                                         # Time step of 2.5 days
                                         
 # -------------------------------------------------------------------------------------------------------------------
@@ -774,7 +952,8 @@ transport_model_graphing_ligand_approach = \
                                    Fe_1 = 0, Fe_2 = 0, Fe_3 = 0, \
                                        use_iron = True, \
                                        ligand_use = True, ligand_total_val = ligand_conc, beta_val = beta_val_1, \
-                                           use_ligand_cycling = True)
+                                           L_1 = 0, L_2 = 0, L_3 = 0, \
+                                               use_ligand_cycling = True)
                                         # Time step of 2.5 days
                                         
 # Geo Tracer Database
