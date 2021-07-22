@@ -78,10 +78,10 @@ lambda_ligand = 5*10**(-5)/4398
 
 def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_symbol, num_elements, lambda_1 = 0, lambda_2 = 0, \
                            mic_ment_nolight = 0, mic_ment_light_leibig = 0, mic_ment_light_mult_lim = 0, Ibox1 = 35, \
-                               k_scav = 0, mu = 0, Fe_1 = No_obj(), Fe_2 = No_obj(), Fe_3 = No_obj(), \
+                               k_scav = 0, mu = 0, Fe_1 = None, Fe_2 = None, Fe_3 = None, \
                                    use_iron = False, \
                                    ligand_use = False, ligand_total_val = 0, beta_val = 0, \
-                                       L_1 = No_obj(), L_2 = No_obj(), L_3 = No_obj(), \
+                                       L_1 = None, L_2 = None, L_3 = None, \
                                            use_ligand_cycling = False, \
                                                one_graph = True, multi_graph = False):
     """
@@ -181,7 +181,7 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
         global iron_dependent_change_in_C_1
         light_dependent_change_in_C_1 = (Ibox1/(K_sat_l + Ibox1))
         nutrient_dependent_change_in_C_1 = ((C_1_input)/(K_sat_N + C_1_input))
-        if Fe_1_input == No_obj():
+        if Fe_1_input == None:
             iron_dependent_change_in_C_1 = None
         else:
             iron_dependent_change_in_C_1 = (Fe_1_input/(K_sat_Fe + Fe_1_input))
@@ -207,7 +207,7 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
         global iron_dependent_change_in_C_2
         light_dependent_change_in_C_2 = (Ibox2/(K_sat_l + Ibox2))
         nutrient_dependent_change_in_C_2 = ((C_2_input)/(K_sat_N + C_2_input))
-        if Fe_2_input == No_obj():
+        if Fe_2_input == None:
             iron_dependent_change_in_C_2 = None
         else:
             iron_dependent_change_in_C_2 = (Fe_2_input/(K_sat_Fe + Fe_2_input))
@@ -321,7 +321,7 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
             # of seconds in a year.
             
         if not use_iron:
-            return No_obj()            
+            return float('inf')            
         elif not ligand_use:
             return (psi*(Fe_3_input - Fe_1_input) + k_31*(Fe_3_input - Fe_1_input) + k_21*(Fe_2_input - Fe_1_input))/vol_1 + \
                 alpha*F_in1/dz_1 - k_scav*Fe_1_input/(60*60*24*365) - R_Fe*export_1(C_1_input, Fe_1_input)
@@ -358,7 +358,7 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
             # of seconds in a year.
             
         if not use_iron:
-            return No_obj()
+            return float('inf')
         elif not ligand_use:
             return (psi*(Fe_1_input - Fe_2_input) + k_12*(Fe_1_input - Fe_2_input) + k_32*(Fe_3_input - Fe_2_input))/vol_2 + \
                 alpha*F_in2/dz_2 - k_scav*Fe_2_input/(60*60*24*365) - R_Fe*export_2(C_2_input, Fe_2_input)
@@ -385,7 +385,7 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
         rates and the concentrations at the given times.
         """
         if not use_iron:
-            return No_obj()
+            return float('inf')
         elif not ligand_use:        
             return (psi*(Fe_2_input - Fe_3_input) + k_23*(Fe_2_input - Fe_3_input) + k_13*(Fe_1_input - Fe_3_input))/vol_3 \
                  - k_scav*Fe_3_input/(60*60*24*365) \
@@ -422,7 +422,7 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
 
         """
         if not ligand_use:
-            return No_obj()
+            return float('inf')
         return (psi*(L_3_input - L_1_input) + k_31*(L_3_input - L_1_input) + k_21*(L_2_input - L_1_input))/vol_1 \
             + gamma*export_1(C_1_input, Fe_1_input) \
                 - lambda_ligand*L_1_input
@@ -448,7 +448,7 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
 
         """     
         if not ligand_use:
-            return No_obj()
+            return float('inf')
         return (psi*(L_1_input - L_2_input) + k_12*(L_1_input - L_2_input) + k_32*(L_3_input - L_2_input))/vol_2 \
             + gamma*export_2(C_2_input, Fe_2_input) \
                 - lambda_ligand*L_2_input
@@ -474,7 +474,7 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
 
         """        
         if not ligand_use:
-            return No_obj()
+            return float('inf')
         return (psi*(L_2_input - L_3_input) + k_23*(L_2_input - L_3_input) + k_13*(L_1_input - L_3_input))/vol_3 \
             - lambda_ligand/100*L_3_input \
                 + gamma/vol_3*(export_1(C_1_input, Fe_1_input)*vol_1 + export_2(C_2_input, Fe_2_input)*vol_2)
@@ -539,12 +539,12 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
     # Initialize initial values of elements to be used (Depending on Passed-in Input Parameter)
     
     list_of_initial_concentrations = [C_1, C_2, C_3, Fe_1, Fe_2, Fe_3, L_1, L_2, L_3]
-    for conc in list_of_initial_concentrations:
-        if conc == No_obj:
-            conc = float('inf')
+    for conc_ind in range(len(list_of_initial_concentrations)):
+        if list_of_initial_concentrations[conc_ind] == None:
+            list_of_initial_concentrations[conc_ind] = float('inf')
     
     feature_vector_height = 0
-    initial_concentration_row = np.array([C_1, C_2, C_3, Fe_1, Fe_2, Fe_3, L_1, L_2, L_3])
+    initial_concentration_row = np.array(list_of_initial_concentrations)
     # np.array([conc for conc in [C_1, C_2, C_3, Fe_1, Fe_2, Fe_3, L_1, L_2, L_3] if conc is not None])
     acfv[0, :] = initial_concentration_row
         # For given row in the blank all_concentration_feature_vector, fill that row in
@@ -566,22 +566,40 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
 
         """
         
-        return [acfv[t_val_temp, 0], acfv[t_val_index, 1], acfv[t_val_index, 2], \
-                acfv[t_val_index, 3], acfv[t_val_index, 4], acfv[t_val_index, 5], \
-                    acfv[t_val_index, 6], acfv[t_val_index, 7], acfv[t_val_index, 8]]
+        return [acfv[t_val_temp, 0], acfv[t_val_temp, 1], acfv[t_val_temp, 2], \
+                acfv[t_val_temp, 3], acfv[t_val_temp, 4], acfv[t_val_temp, 5], \
+                    acfv[t_val_temp, 6], acfv[t_val_temp, 7], acfv[t_val_temp, 8]]
     
     for t_val_index in range(len(time_axis_array[1:])):
         feature_vector_height += 1
         acfv[feature_vector_height, :] = acfv[t_val_index, :] \
-                + np.array([dC_1_over_dt(', '.join(crr(t_val_index)))*dt, \
-                            dC_2_over_dt(', '.join(crr(t_val_index)))*dt, \
-                            dC_3_over_dt(', '.join(crr(t_val_index)))*dt, \
-                            dFe_1_over_dt(', '.join(crr(t_val_index)))*dt, \
-                            dFe_2_over_dt(', '.join(crr(t_val_index)))*dt, \
-                            dFe_3_over_dt(', '.join(crr(t_val_index)))*dt, \
-                            dLt_1_over_dt(', '.join(crr(t_val_index)))*dt, \
-                            dLt_2_over_dt(', '.join(crr(t_val_index)))*dt, \
-                            dLt_3_over_dt(', '.join(crr(t_val_index)))*dt])
+                + np.array([dC_1_over_dt(acfv[t_val_index, 0], acfv[t_val_index, 1], acfv[t_val_index, 2], \
+                acfv[t_val_index, 3], acfv[t_val_index, 4], acfv[t_val_index, 5], \
+                    acfv[t_val_index, 6], acfv[t_val_index, 7], acfv[t_val_index, 8])*dt, \
+                            dC_2_over_dt(acfv[t_val_index, 0], acfv[t_val_index, 1], acfv[t_val_index, 2], \
+                acfv[t_val_index, 3], acfv[t_val_index, 4], acfv[t_val_index, 5], \
+                    acfv[t_val_index, 6], acfv[t_val_index, 7], acfv[t_val_index, 8])*dt, \
+                            dC_3_over_dt(acfv[t_val_index, 0], acfv[t_val_index, 1], acfv[t_val_index, 2], \
+                acfv[t_val_index, 3], acfv[t_val_index, 4], acfv[t_val_index, 5], \
+                    acfv[t_val_index, 6], acfv[t_val_index, 7], acfv[t_val_index, 8])*dt, \
+                            dFe_1_over_dt(acfv[t_val_index, 0], acfv[t_val_index, 1], acfv[t_val_index, 2], \
+                acfv[t_val_index, 3], acfv[t_val_index, 4], acfv[t_val_index, 5], \
+                    acfv[t_val_index, 6], acfv[t_val_index, 7], acfv[t_val_index, 8])*dt, \
+                            dFe_2_over_dt(acfv[t_val_index, 0], acfv[t_val_index, 1], acfv[t_val_index, 2], \
+                acfv[t_val_index, 3], acfv[t_val_index, 4], acfv[t_val_index, 5], \
+                    acfv[t_val_index, 6], acfv[t_val_index, 7], acfv[t_val_index, 8])*dt, \
+                            dFe_3_over_dt(acfv[t_val_index, 0], acfv[t_val_index, 1], acfv[t_val_index, 2], \
+                acfv[t_val_index, 3], acfv[t_val_index, 4], acfv[t_val_index, 5], \
+                    acfv[t_val_index, 6], acfv[t_val_index, 7], acfv[t_val_index, 8])*dt, \
+                            dLt_1_over_dt(acfv[t_val_index, 0], acfv[t_val_index, 1], acfv[t_val_index, 2], \
+                acfv[t_val_index, 3], acfv[t_val_index, 4], acfv[t_val_index, 5], \
+                    acfv[t_val_index, 6], acfv[t_val_index, 7], acfv[t_val_index, 8])*dt, \
+                            dLt_2_over_dt(acfv[t_val_index, 0], acfv[t_val_index, 1], acfv[t_val_index, 2], \
+                acfv[t_val_index, 3], acfv[t_val_index, 4], acfv[t_val_index, 5], \
+                    acfv[t_val_index, 6], acfv[t_val_index, 7], acfv[t_val_index, 8])*dt, \
+                            dLt_3_over_dt(acfv[t_val_index, 0], acfv[t_val_index, 1], acfv[t_val_index, 2], \
+                acfv[t_val_index, 3], acfv[t_val_index, 4], acfv[t_val_index, 5], \
+                    acfv[t_val_index, 6], acfv[t_val_index, 7], acfv[t_val_index, 8])*dt])
     
     # Remove columns with values of infinity.
     
@@ -622,7 +640,7 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, element_
                 lig.set_title('Ligand Concentrations Over Time')
                 lig.set_xlabel('Time [log(years)]')
                 lig.set_ylabel('Concentration (mol per cubic meter)')
-            for conc_index in range(conc_name_list):
+            for conc_index in range(len(conc_name_list)):
                 if conc_index <= 2:
                     nutri_conc.plot(time_axis_array_log10, acfv_t_p[conc_index, :], color_list[conc_index], label = f'{conc_name_list[conc_index]}')
                 if 3 <= conc_index <= 5 and use_iron:
