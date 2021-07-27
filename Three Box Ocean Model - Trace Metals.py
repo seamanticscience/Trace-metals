@@ -52,8 +52,8 @@ Ibox2 = 60 #Units of W m-2
 
 # Global Values for metal Cycle and Deposition
 alpha = 0.01*0.035 #M dust solubility
-R_M = (2.5*10**-5)*6.625 #unitless, multiplied by 6.625 to convert this M:C ratio to M:N
-K_sat_M = 2*10**-7 #units of mole per cubic meter
+R_Fe = (2.5*10**-5)*6.625 #unitless, multiplied by 6.625 to convert this M:C ratio to M:N
+K_sat_Fe = 2*10**-7 #units of mole per cubic meter
 f_dop = 0.67 # Fraction of particles that makes it into pool of nitrate, unitless.
 
 # Global Values for Ligand Cycling and Microbial Production
@@ -68,8 +68,9 @@ lambda_ligand = 5*10**(-5)/4398
 
 def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_elements, \
                            use_metal = False, metal_type = None, M_1 = None, M_2 = None, M_3 = None, \
-                               ligand_use = False, use_ligand_cycling = False, \
-                                   L_1 = None, L_2 = None, L_3 = None, \
+                               M_in1 = None, M_in2 = None, alpha = None, R_M = None, K_sat_M = None, \
+                                   ligand_use = False, use_ligand_cycling = False, \
+                                       L_1 = None, L_2 = None, L_3 = None, \
                            mic_ment_light_leibig = 0, mic_ment_light_mult_lim = 0, \
                                k_scav = 0, ligand_total_val = 0, beta_val = 0):
     """
@@ -84,9 +85,13 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_elem
         end_time: int, number of years for which we want to process the simulation
         title: str, title to be given to graph.
         num_elements: Number of elements to be studied/ plotted. Will be useful when handling trace metals. 
+        K_sat_M = Saturation constant of metal.
         use_metal: boolean, true if we want to measure concentration of metal.
         M_1, M_2, M_3: Initial Concentrations of metal in the three boxes (float)
             in mols per cubic meter, this was iron in the previous model. 
+        M_in1, M_in2: Amount of metal inputted to respective box. Value in mols of metal per second for
+            consistency.
+        alpha: fraction of metal inputted that is usable for purposes. 
         metal_type: string, designates type of metal.
         ligand_use: Boolean parameter, indicates whether we want to use ligands in this model (and whether
             our free metal pool will differ from the total metal pool thanks to complexation).
@@ -265,21 +270,16 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_elem
         Number quantity reflecting change of M_1 per unit time, governed by the flow
         rates and the concentrations at the given times.
         """
-        # Establishing F_in
-        F_in1 = 0.071/(55.845*60*60*24*365)
-            # The quanitity is initially provided in grams M per year. To convert this
-            # quantity to mol M per second, divide by molar mass as well as the total number
-            # of seconds in a year.
             
         if not ligand_use:
             return (psi*(M_3_input - M_1_input) + k_31*(M_3_input - M_1_input) + k_21*(M_2_input - M_1_input))/vol_1 + \
-                alpha*F_in1/dz_1 - k_scav*M_1_input/(60*60*24*365) - R_M*export_1(C_1_input, M_1_input)
+                alpha*M_in1/dz_1 - k_scav*M_1_input/(60*60*24*365) - R_M*export_1(C_1_input, M_1_input)
         elif not use_ligand_cycling:
             return (psi*(M_3_input - M_1_input) + k_31*(M_3_input - M_1_input) + k_21*(M_2_input - M_1_input))/vol_1 + \
-                alpha*F_in1/dz_1 - k_scav*complexation(M_1_input, ligand_total_val, beta_val)/(60*60*24*365) - R_M*export_1(C_1_input, M_1_input)
+                alpha*M_in1/dz_1 - k_scav*complexation(M_1_input, ligand_total_val, beta_val)/(60*60*24*365) - R_M*export_1(C_1_input, M_1_input)
         else: 
             return (psi*(M_3_input - M_1_input) + k_31*(M_3_input - M_1_input) + k_21*(M_2_input - M_1_input))/vol_1 + \
-                alpha*F_in1/dz_1 - k_scav*complexation(M_1_input, L_1_input, beta_val)/(60*60*24*365) - R_M*export_1(C_1_input, M_1_input)
+                alpha*M_in1/dz_1 - k_scav*complexation(M_1_input, L_1_input, beta_val)/(60*60*24*365) - R_M*export_1(C_1_input, M_1_input)
             
                 # Line 1: General tracer equation, maintains equilibrium among all three boxes with flow rate considered.
                 # Line 2: First term represents source, second term represents sink (in terms of being scavenged)
@@ -298,21 +298,16 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_elem
         Number quantity reflecting change of M_2 per unit time, governed by the flow
         rates and the concentrations at the given times.
         """
-        # Establishing F_in.
-        F_in2 = 6.46/(55.845*60*60*24*365)
-            # The quanitity is initially provided in grams M per year. To convert this
-            # quantity to mol M per second, divide by molar mass as well as the total number
-            # of seconds in a year.
             
         if not ligand_use:
             return (psi*(M_1_input - M_2_input) + k_12*(M_1_input - M_2_input) + k_32*(M_3_input - M_2_input))/vol_2 + \
-                alpha*F_in2/dz_2 - k_scav*M_2_input/(60*60*24*365) - R_M*export_2(C_2_input, M_2_input)
+                alpha*M_in2/dz_2 - k_scav*M_2_input/(60*60*24*365) - R_M*export_2(C_2_input, M_2_input)
         elif not use_ligand_cycling:
             return (psi*(M_1_input - M_2_input) + k_12*(M_1_input - M_2_input) + k_32*(M_3_input - M_2_input))/vol_2 + \
-                alpha*F_in2/dz_2 - k_scav*complexation(M_2_input, ligand_total_val, beta_val)/(60*60*24*365) - R_M*export_2(C_2_input, M_2_input)
+                alpha*M_in2/dz_2 - k_scav*complexation(M_2_input, ligand_total_val, beta_val)/(60*60*24*365) - R_M*export_2(C_2_input, M_2_input)
         else:
              return (psi*(M_1_input - M_2_input) + k_12*(M_1_input - M_2_input) + k_32*(M_3_input - M_2_input))/vol_2 + \
-                alpha*F_in2/dz_2 - k_scav*complexation(M_2_input, L_2_input, beta_val)/(60*60*24*365) - R_M*export_2(C_2_input, M_2_input)           
+                alpha*M_in2/dz_2 - k_scav*complexation(M_2_input, L_2_input, beta_val)/(60*60*24*365) - R_M*export_2(C_2_input, M_2_input)           
         
     def dM_3_over_dt(M_1_input = M_1, M_2_input = M_2, M_3_input = M_3, C_1_input = C_1, C_2_input = C_2, L_1_input = L_1, L_2_input = L_2, L_3_input = L_3):
         """
@@ -561,17 +556,17 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_elem
         color_list = ['r', 'g', 'b', 'm-', 'y-', 'c-', 'r', 'g', 'b']
         
         fig, nutri_conc = plt.subplots()
-        nutri_conc.set_title('Change in Nutrient Concentration Over Time')
+        nutri_conc.set_title(f'{title} \n {metal_type}: Change in Nutrient Concentration Over Time \n')
         nutri_conc.set_xlabel('Time [log(years)]')
         nutri_conc.set_ylabel('Concentration (mol per cubic meter)')
         if use_metal:
             ir, metal_axis = plt.subplots()     
-            metal_axis.set_title(f'{metal_type} Concentrations Over Time')
+            metal_axis.set_title(f'{title} \n {metal_type} Concentrations Over Time \n')
             metal_axis.set_xlabel('Time [log(years)]')
             metal_axis.set_ylabel(f'Concentration of {metal_type} per cubic meter \n (in nmol/m3)')
         if use_ligand_cycling:
             lig_graph, lig = plt.subplots()
-            lig.set_title('Ligand Concentrations Over Time')
+            lig.set_title(f'{title} \n {metal_type}: Ligand Concentrations Over Time \n')
             lig.set_xlabel('Time [log(years)]')
             lig.set_ylabel('Concentration (mol per cubic meter)')
         for conc_index in range(len(conc_name_list)):
@@ -603,15 +598,56 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_elem
 
 # -------------------------------------------------------------------
 # Plotting Iron with results similar to Lauderdale 2020
+
 N_1_to_3 = 30*rho_0*10**(-6)
+
+alpha_Fe = 0.01*0.035 #Fe dust solubility
+R_Fe = (2.5*10**-5)*6.625 #unitless, multiplied by 6.625 to convert this Fe:C ratio to Fe:N
+K_sat_Fe = 2*10**-7 #units of mole per cubic meter
+
+
 ligand_conc = 1*10**-6 # mol/m3
 beta_val_1 = 10**8 # kg/mol, as required by the value earlier.
+# Establishing F_in1.
+F_in1 = 0.071/(55.845*60*60*24*365)
+    # The quanitity is initially provided in grams M per year. To convert this
+    # quantity to mol M per second, divide by molar mass as well as the total number
+    # of seconds in a year.   
+# Establishing F_in2.
+F_in2 = 6.46/(55.845*60*60*24*365)
+    # The quanitity is initially provided in grams M per year. To convert this
+    # quantity to mol M per second, divide by molar mass as well as the total number
+    # of seconds in a year.
+
+
 
 transport_model_graphing_ligand_approach = \
         create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, 0.006849, 10000, \
-                           'Concentrations of N_1, N_2, N_3, M_1, M_2, M_3 w/ exports and complexation, \n dt = 2.5 days, variable export rate, \n ligand concentration = 10**-6, beta = 10**8 (kg per mol) \n Michalis-Menten Model, Leibig Limit Approximation \n  ', 9, \
-                               use_metal = True, metal_type = 'Fe', M_1 = 0, M_2 = 0, M_3 = 0, \
-                                   ligand_use = True, use_ligand_cycling = True, \
-                                       L_1 = 0, L_2 = 0, L_3 = 0, \
-                                           mic_ment_light_leibig = 1, \
-                                               k_scav = 0.19, ligand_total_val = ligand_conc, beta_val = beta_val_1)
+                            'Concentrations of Nutrients, Iron, and Ligands over time, \n dt = 2.5 days, ligand concentration = 10**-6, beta = 10**8 (kg per mol) \n Michalis-Menten Model, Leibig Limit Approximation', 9, \
+                                use_metal = True, metal_type = 'Fe', M_1 = 0, M_2 = 0, M_3 = 0, K_sat_M = K_sat_Fe, \
+                                    M_in1 = F_in1, M_in2 = F_in2, alpha = alpha_Fe, R_M = R_Fe, \
+                                        ligand_use = True, use_ligand_cycling = True, \
+                                            L_1 = 0, L_2 = 0, L_3 = 0, \
+                                                mic_ment_light_leibig = 1, \
+                                                    k_scav = 0.19, ligand_total_val = ligand_conc, beta_val = beta_val_1)
+
+# -------------------------------------------------------------------
+# Copper (II): Assume that the surface concentration (i.e. metal and ligands) in the first
+# two boxes are uniform. Scale K_sat_Fe to K_sat_Cu(II) according to elemental ratios. 
+# Assume maximum concentrations of metal and initial ligand total pool.
+
+N_1_to_3 = 30*rho_0*10**(-6)
+Cu_1_2 = 1*10**-9
+ligand_conc = 2*10**-9 # mol/m3
+beta_val_Cu = math.exp(8.5)
+K_sat_Cu_II = K_sat_Fe*(0.68/7.5) # Using elemental ratios to convert between iron and copper. 
+
+transport_model_graphing_ligand_approach = \
+        create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, 0.006849, 10000, \
+                            'Concentrations of Nutrients, Iron, and Ligands over time, \n dt = 2.5 days, ligand concentration = 10**-6, beta = 10**8 (kg per mol) \n Michalis-Menten Model, Leibig Limit Approximation', 9, \
+                                use_metal = True, metal_type = 'Cu(II)', M_1 = Cu_1_2, M_2 = Cu_1_2, M_3 = 0, K_sat_M = K_sat_Cu_II, \
+                                    M_in1 = F_in1, M_in2 = F_in2, alpha = alpha_Fe, R_M = R_Fe, \
+                                        ligand_use = True, use_ligand_cycling = True, \
+                                            L_1 = 0, L_2 = 0, L_3 = 0, \
+                                                mic_ment_light_leibig = 1, \
+                                                    k_scav = 0.19, ligand_total_val = ligand_conc, beta_val = beta_val_Cu)
