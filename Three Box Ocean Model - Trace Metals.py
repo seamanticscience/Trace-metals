@@ -637,17 +637,21 @@ transport_model_graphing_ligand_approach = \
 # Assume maximum concentrations of metal and initial ligand total pool.
 
 N_1_to_3 = 30*rho_0*10**(-6)
-Cu_1_2 = 1*10**-9
+Cu_1_2 = (1*10**-9)*(1000) # Converting value from mol/liter to mol/m3
+
+alpha_Cu_II = alpha_Fe
+R_Cu_II = R_Fe*(0.38/7.5) # Using elemental ratio.
+K_sat_Cu_II = K_sat_Fe*(0.38/7.5) # Using elemental ratios to convert between iron and copper. 
+
 ligand_conc = 2*10**-9 # mol/m3
-beta_val_Cu = math.exp(8.5)
-K_sat_Cu_II = K_sat_Fe*(0.68/7.5) # Using elemental ratios to convert between iron and copper. 
+beta_val_Cu_II = math.exp(8.5)
 
 transport_model_graphing_ligand_approach = \
         create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, 0.006849, 10000, \
-                            'Concentrations of Nutrients, Iron, and Ligands over time, \n dt = 2.5 days, ligand concentration = 10**-6, beta = 10**8 (kg per mol) \n Michalis-Menten Model, Leibig Limit Approximation', 9, \
+                            'Concentrations of Nutrients, Iron, and Ligands over time, \n dt = 2.5 days, ligand concentration = 2*10**-9, beta = e**8.5 (kg per mol) \n Michalis-Menten Model, Leibig Limit Approximation', 9, \
                                 use_metal = True, metal_type = 'Cu(II)', M_1 = Cu_1_2, M_2 = Cu_1_2, M_3 = 0, K_sat_M = K_sat_Cu_II, \
-                                    M_in1 = F_in1, M_in2 = F_in2, alpha = alpha_Fe, R_M = R_Fe, \
+                                    M_in1 = F_in1, M_in2 = F_in2, alpha = alpha_Cu_II, R_M = R_Cu_II, \
                                         ligand_use = True, use_ligand_cycling = True, \
-                                            L_1 = 0, L_2 = 0, L_3 = 0, \
+                                            L_1 = ligand_conc, L_2 = ligand_conc, L_3 = 0, \
                                                 mic_ment_light_leibig = 1, \
-                                                    k_scav = 0.19, ligand_total_val = ligand_conc, beta_val = beta_val_Cu)
+                                                    k_scav = 0.19, ligand_total_val = ligand_conc, beta_val = beta_val_Cu_II)
