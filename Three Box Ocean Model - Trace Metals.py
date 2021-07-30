@@ -73,7 +73,7 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_elem
                                        L_1 = None, L_2 = None, L_3 = None, \
                            mic_ment_light_leibig = 0, mic_ment_light_mult_lim = 0, \
                                k_scav = 0, ligand_total_val = 0, beta_val = 0, \
-                                   *other_metal_parameters):
+                                   **other_metal_parameters):
     """
     Uses first order ODEs to characterize the time dependence of the concentration(s)
     in the three boxes (of fixed dimension).
@@ -124,50 +124,54 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_elem
     
     ## Initiate Lists With Additional *args passed in, as well as initial concentrations.
     
-    metal_symbol_list = [metal_type,]
-    metal_1_list = [M_1, ]
-    metal_2_list = [M_2, ]
-    metal_3_list = [M_3, ]
-    metal_in_1_list = [M_in1, ]
-    metal_in_2_list = [M_in2, ]
-    alpha_list = [alpha, ]
-    R_M_list = [R_M, ]
-    K_sat_M_list = [K_sat_M, ]
-    ligand_use_list = [ligand_use, ]
-    use_ligand_cycling_list = [use_ligand_cycling, ]
-    L_1_init_list = [L_1, ]
-    L_2_init_list = [L_2, ]
-    L_3_init_list = [L_3, ]
+    metal_symbol_list = [('symb_M', metal_type), ]
+    metal_1_list = [('m_conc_M1', M_1), ]
+    metal_2_list = [('m_conc_M2', M_2), ]
+    metal_3_list = [('m_conc_M3', M_3), ]
+    metal_in_1_list = [('M_in1', M_in1), ]
+    metal_in_2_list = [('M_in2', M_in2), ]
+    alpha_list = [('alpha_M', alpha), ]
+    R_M_list = [('R_M', R_M), ]
+    K_sat_M_list = [('K_sat_M', K_sat_M), ]
+    ligand_use_list = [('ligand_use', ligand_use), ]
+    use_ligand_cycling_list = [('use_ligand_cycling', use_ligand_cycling), ]
+    L_1_init_list = [('L_1_M', L_1), ]
+    L_2_init_list = [('L_2_M', L_2), ]
+    L_3_init_list = [('L_3_M', L_3), ]
 
-    for para_val_index in range(len(other_metal_parameters)):
-        if para_val_index % len(other_metal_parameters) == 0:
-            metal_symbol_list.append(other_metal_parameters[para_val_index])
-        elif para_val_index % len(other_metal_parameters) == 1:
-            metal_1_list.append(other_metal_parameters[para_val_index])
-        elif para_val_index % len(other_metal_parameters) == 2:
-            metal_2_list.append(other_metal_parameters[para_val_index])
-        elif para_val_index % len(other_metal_parameters) == 3:
-            metal_3_list.append(other_metal_parameters[para_val_index])
-        elif para_val_index % len(other_metal_parameters) == 4:
-            metal_in_1_list.append(other_metal_parameters[para_val_index])
-        elif para_val_index % len(other_metal_parameters) == 5:
-            metal_in_2_list.append(other_metal_parameters[para_val_index])
-        elif para_val_index % len(other_metal_parameters) == 6:
-            alpha_list.append(other_metal_parameters[para_val_index])
-        elif para_val_index % len(other_metal_parameters) == 7:
-            R_M_list.append(other_metal_parameters[para_val_index])
-        elif para_val_index % len(other_metal_parameters) == 8:
-            K_sat_M_list.append(other_metal_parameters[para_val_index])
-        elif para_val_index % len(other_metal_parameters) == 9:
-            ligand_use_list.append(other_metal_parameters[para_val_index])
-        elif para_val_index % len(other_metal_parameters) == 10:
-            use_ligand_cycling_list.append(other_metal_parameters[para_val_index])
-        elif para_val_index % len(other_metal_parameters) == 11:
-            L_1_init_list.append(other_metal_parameters[para_val_index])
-        elif para_val_index % len(other_metal_parameters) == 12:
-            L_2_init_list.append(other_metal_parameters[para_val_index])
-        elif para_val_index % len(other_metal_parameters) == 13:
-            L_3_init_list.append(other_metal_parameters[para_val_index])
+
+    for parameter_val in other_metal_parameters.items():
+        if parameter_val[0].startswith('symb'):
+            metal_symbol_list.append(parameter_val)
+        elif parameter_val[0].startswith('m_conc_') and parameter_val[0].endswith('1'):
+            metal_1_list.append(parameter_val)
+        elif parameter_val[0].startswith('m_conc_') and parameter_val[0].endswith('2'):
+            metal_2_list.append(parameter_val)
+        elif parameter_val[0].startswith('m_conc_') and parameter_val[0].endswith('3'):
+            metal_3_list.append(parameter_val)
+        elif parameter_val[0].startswith('in1'):
+            metal_in_1_list.append(parameter_val)
+        elif parameter_val[0].startswith('in2'):
+            metal_in_2_list.append(parameter_val)
+        elif parameter_val[0].startswith('alpha'):
+            alpha_list.append(parameter_val)
+        elif parameter_val[0].startswith('R_M'):
+            R_M_list.append(parameter_val)
+        elif parameter_val[0].startswith('K_sat_'):
+            K_sat_M_list.append(parameter_val)
+        elif parameter_val[0].startswith('ligand_use_'):
+            ligand_use_list.append(parameter_val)
+        elif parameter_val[0].startswith('use_ligand_cycling_'):
+            use_ligand_cycling_list.append(parameter_val)
+        elif parameter_val[0].startswith('L_1_'):
+            L_1_init_list.append(parameter_val)
+        elif parameter_val[0].startswith('L_2_'):
+            L_2_init_list.append(parameter_val)
+        elif parameter_val[0].startswith('L_3_'):
+            L_3_init_list.append(parameter_val)
+            
+    print(metal_symbol_list)
+    print(alpha_list)
     
 
     ## Initiate Time Variables
@@ -178,10 +182,10 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_elem
     ## concentrations of C_1 and C_2 so that these values can be reused for C_3.
     light_dependent_change_in_C_1 = 0
     nutrient_dependent_change_in_C_1 = 0
-    metal_dependent_change_in_C_1 = 0
+    metal_dependent_change_in_C_1 = [0 for items in metal_1_list]
     light_dependent_change_in_C_2 = 0
     nutrient_dependent_change_in_C_2 = 0
-    metal_dependent_change_in_C_2 = 0
+    metal_dependent_change_in_C_2 = [0 for items in metal_2_list]
     
     # ...........................................................................
     
@@ -676,20 +680,47 @@ F_in2 = 6.46/(55.845*60*60*24*365)
 
 
 
-transport_model_graphing_ligand_approach = \
-        create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, 0.006849, 10000, \
-                            'Concentrations of Nutrients, Iron, and Ligands over time, \n dt = 2.5 days, ligand concentration = 10**-6, beta = 10**8 (kg per mol) \n Michalis-Menten Model, Leibig Limit Approximation', 9, \
-                                use_metal = True, metal_type = 'Fe', M_1 = 0, M_2 = 0, M_3 = 0, K_sat_M = K_sat_Fe, \
-                                    M_in1 = F_in1, M_in2 = F_in2, alpha = alpha_Fe, R_M = R_Fe, \
-                                        ligand_use = True, use_ligand_cycling = True, \
-                                            L_1 = 0, L_2 = 0, L_3 = 0, \
-                                                mic_ment_light_leibig = 1, \
-                                                    k_scav = 0.19, ligand_total_val = ligand_conc, beta_val = beta_val_1)
+# transport_model_graphing_ligand_approach = \
+#         create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, 0.006849, 10000, \
+#                             'Concentrations of Nutrients, Iron, and Ligands over time, \n dt = 2.5 days, ligand concentration = 10**-6, beta = 10**8 (kg per mol) \n Michalis-Menten Model, Leibig Limit Approximation', 9, \
+#                                 use_metal = True, metal_type = 'Fe', M_1 = 0, M_2 = 0, M_3 = 0, K_sat_M = K_sat_Fe, \
+#                                     M_in1 = F_in1, M_in2 = F_in2, alpha = alpha_Fe, R_M = R_Fe, \
+#                                         ligand_use = True, use_ligand_cycling = True, \
+#                                             L_1 = 0, L_2 = 0, L_3 = 0, \
+#                                                 mic_ment_light_leibig = 1, \
+#                                                     k_scav = 0.19, ligand_total_val = ligand_conc, beta_val = beta_val_1)
 
 # -------------------------------------------------------------------
 # Copper (II): Assume that the surface concentration (i.e. metal and ligands) in the first
 # two boxes are uniform. Scale K_sat_Fe to K_sat_Cu(II) according to elemental ratios. 
 # Assume maximum concentrations of metal and initial ligand total pool.
+# ONLY CONSIDERS COPPER IN THE POOL OF METALS.
+
+N_1_to_3 = 30*rho_0*10**(-6)
+Cu_1_2 = (1*10**-9)*(1000) # Converting value from mol/liter to mol/m3
+
+alpha_Cu_II = alpha_Fe
+R_Cu_II = R_Fe*(0.38/7.5) # Using elemental ratio.
+K_sat_Cu_II = K_sat_Fe*(0.38/7.5) # Using elemental ratios to convert between iron and copper. 
+
+ligand_conc = 2*10**-9 # mol/m3
+beta_val_Cu_II = math.exp(8.5)
+
+# transport_model_graphing_ligand_approach = \
+#         create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, 0.006849, 10000, \
+#                             'Concentrations of Nutrients, Iron, and Ligands over time, \n dt = 2.5 days, ligand concentration = 2*10**-9, beta = e**8.5 (kg per mol) \n Michalis-Menten Model, Leibig Limit Approximation', 9, \
+#                                 use_metal = True, metal_type = 'Cu(II)', M_1 = Cu_1_2, M_2 = Cu_1_2, M_3 = 0, K_sat_M = K_sat_Cu_II, \
+#                                     M_in1 = F_in1, M_in2 = F_in2, alpha = alpha_Cu_II, R_M = R_Cu_II, \
+#                                         ligand_use = True, use_ligand_cycling = True, \
+#                                             L_1 = ligand_conc, L_2 = ligand_conc, L_3 = 0, \
+#                                                 mic_ment_light_leibig = 1, \
+#                                                     k_scav = 0.19, ligand_total_val = ligand_conc, beta_val = beta_val_Cu_II)
+
+# -------------------------------------------------------------------
+# Copper (II): Assume that the surface concentration (i.e. metal and ligands) in the first
+# two boxes are uniform. Scale K_sat_Fe to K_sat_Cu(II) according to elemental ratios. 
+# Assume maximum concentrations of metal and initial ligand total pool.
+# Includes Iron in the Copper Pool, no changes to ligand behavior. 
 
 N_1_to_3 = 30*rho_0*10**(-6)
 Cu_1_2 = (1*10**-9)*(1000) # Converting value from mol/liter to mol/m3
@@ -708,5 +739,9 @@ transport_model_graphing_ligand_approach = \
                                     M_in1 = F_in1, M_in2 = F_in2, alpha = alpha_Cu_II, R_M = R_Cu_II, \
                                         ligand_use = True, use_ligand_cycling = True, \
                                             L_1 = ligand_conc, L_2 = ligand_conc, L_3 = 0, \
-                                                mic_ment_light_leibig = 1, \
-                                                    k_scav = 0.19, ligand_total_val = ligand_conc, beta_val = beta_val_Cu_II)
+                                                mic_ment_light_leibig = 1, mic_ment_mult_lim = 0, \
+                                                    k_scav = 0.19, ligand_total_val = ligand_conc, beta_val = beta_val_Cu_II,  \
+                                                        symb_Cu = 1, m_conc_Cu_1 = 2, m_conc_Cu_2 = 3, m_conc_Cu_3 = 4, \
+                                                            in1_Cu = 5, in2_Cu = 6, alpha_Cu = 7, R_M_Cu = 8, K_sat_Cu = 9, \
+                                                                ligand_use_Cu = 10, use_ligand_cycling_Cu = 11, \
+                                                                    L_1_Cu = 12, L_2_Cu = 13, L_3_Cu = 14)
