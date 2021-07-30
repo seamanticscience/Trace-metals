@@ -72,7 +72,8 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_elem
                                    ligand_use = False, use_ligand_cycling = False, \
                                        L_1 = None, L_2 = None, L_3 = None, \
                            mic_ment_light_leibig = 0, mic_ment_light_mult_lim = 0, \
-                               k_scav = 0, ligand_total_val = 0, beta_val = 0):
+                               k_scav = 0, ligand_total_val = 0, beta_val = 0, \
+                                   *other_metal_parameters):
     """
     Uses first order ODEs to characterize the time dependence of the concentration(s)
     in the three boxes (of fixed dimension).
@@ -105,6 +106,12 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_elem
         k_scav: k value associated with scavenging of metal, default set to 0. Input in yr-1
         ligand_total_val: float, initially set to 0 because by default we do not have any ligands in the model.
         beta_val: float, initially set to 0 because we have no equilibrium between the metal and ligand concentrations.
+        *other_metal_parameters: If we want to include other metals in this model alongside M_1 to M_3, we input them here. 
+            The order in which the parameters will be accepted are:
+                metal_symbol, metal_1, metal_2, metal_3, metal_in_1, metal_in_2, alpha_metal, R_M_metal, 
+                K_sat_M_metal, ligand_use_metal, use_ligand_cycling_metal, L_1_metal, L_2_metal, 
+                L_3_metal.
+            All of these parameters MUST be passed in to include a new metal. 
     Returns
     -------
         Plots graph with this information (not returned)
@@ -113,6 +120,54 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_elem
     ## value, and raise a value error.
     
     ## Yet to be implemented.    
+    
+    
+    ## Initiate Lists With Additional *args passed in, as well as initial concentrations.
+    
+    metal_symbol_list = [metal_type,]
+    metal_1_list = [M_1, ]
+    metal_2_list = [M_2, ]
+    metal_3_list = [M_3, ]
+    metal_in_1_list = [M_in1, ]
+    metal_in_2_list = [M_in2, ]
+    alpha_list = [alpha, ]
+    R_M_list = [R_M, ]
+    K_sat_M_list = [K_sat_M, ]
+    ligand_use_list = [ligand_use, ]
+    use_ligand_cycling_list = [use_ligand_cycling, ]
+    L_1_init_list = [L_1, ]
+    L_2_init_list = [L_2, ]
+    L_3_init_list = [L_3, ]
+
+    for para_val_index in range(len(other_metal_parameters)):
+        if para_val_index % len(other_metal_parameters) == 0:
+            metal_symbol_list.append(other_metal_parameters[para_val_index])
+        elif para_val_index % len(other_metal_parameters) == 1:
+            metal_1_list.append(other_metal_parameters[para_val_index])
+        elif para_val_index % len(other_metal_parameters) == 2:
+            metal_2_list.append(other_metal_parameters[para_val_index])
+        elif para_val_index % len(other_metal_parameters) == 3:
+            metal_3_list.append(other_metal_parameters[para_val_index])
+        elif para_val_index % len(other_metal_parameters) == 4:
+            metal_in_1_list.append(other_metal_parameters[para_val_index])
+        elif para_val_index % len(other_metal_parameters) == 5:
+            metal_in_2_list.append(other_metal_parameters[para_val_index])
+        elif para_val_index % len(other_metal_parameters) == 6:
+            alpha_list.append(other_metal_parameters[para_val_index])
+        elif para_val_index % len(other_metal_parameters) == 7:
+            R_M_list.append(other_metal_parameters[para_val_index])
+        elif para_val_index % len(other_metal_parameters) == 8:
+            K_sat_M_list.append(other_metal_parameters[para_val_index])
+        elif para_val_index % len(other_metal_parameters) == 9:
+            ligand_use_list.append(other_metal_parameters[para_val_index])
+        elif para_val_index % len(other_metal_parameters) == 10:
+            use_ligand_cycling_list.append(other_metal_parameters[para_val_index])
+        elif para_val_index % len(other_metal_parameters) == 11:
+            L_1_init_list.append(other_metal_parameters[para_val_index])
+        elif para_val_index % len(other_metal_parameters) == 12:
+            L_2_init_list.append(other_metal_parameters[para_val_index])
+        elif para_val_index % len(other_metal_parameters) == 13:
+            L_3_init_list.append(other_metal_parameters[para_val_index])
     
 
     ## Initiate Time Variables
