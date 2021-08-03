@@ -8,6 +8,8 @@ Created on Mon Jul  5 17:19:20 2021
 import numpy as np
 import matplotlib.pyplot as plt
 import math
+import pandas as pd
+import itertools
 
 ### -----------------------------------------------------------------------------
 
@@ -250,14 +252,14 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
         metal_constant_list = []
         for metal_index in range(len(metal_1_list_tent)):
             metal_constant_list.append((metal_1_list_tent[metal_index][1], K_sat_M_list_tent[metal_index][1]))
-      
+
         # Create list of metal_dependent_changes and save it to global list.
         metal_dependent_change_in_C_1 = \
             [(M_1_input/(K_sat_M_s + M_1_input)) for M_1_input, K_sat_M_s in metal_constant_list]
-        
+
         # Find minimum in list
         metal_dependent_change_in_C_1_min = min(metal_dependent_change_in_C_1)
-        
+
         return mic_ment_light_leibig*V_max*min([light_dependent_change_in_C_1, nutrient_dependent_change_in_C_1, metal_dependent_change_in_C_1_min]) \
                         + mic_ment_light_mult_lim*V_max*light_dependent_change_in_C_1*nutrient_dependent_change_in_C_1*float(np.prod(np.array(metal_dependent_change_in_C_1)))
 
@@ -584,6 +586,12 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
     # Finally initiate iteration(s).
     
     for t_val in time_axis_array[1:]:
+            # print(metal_1_list)
+            # print(metal_2_list)
+            # print(metal_3_list)
+            # print(L_1_init_list)
+            # print(L_2_init_list)
+            # print(L_3_init_list)
             C_1_temp += dC_1_over_dt(metal_1_list, K_sat_M_list, C_1, C_2, C_3)*dt
             C_1_list.append(C_1_temp)
                 # Use Euler Step Function to change value of C_1 by one time step (i.e. dt). Then 
@@ -718,7 +726,7 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
             '''
             
             plt.figure()
-            plt.title(f'{title} \n {ml_name} Concentrations Over Time (in mol/m3)')
+            plt.title(f'{title} \n {ml_name} Concentrations Over Time (in mol/m3) \n')
             plt.xlabel('Time [log(years)]')
             plt.ylabel(f'Concentration of {ml_name} (in mol/m3)')
             plt.plot(time_axis_array_tempo, ml_concentrations_1, 'r', label = f'{ml_name}_1')
@@ -735,48 +743,15 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
         
         # Plot Metals and Ligands
         for metal_index in range(len(metal_symbol_list_temp)):
-            plot_metal_or_ligand(f'{metal_symbol_list_temp[metal_index]}', time_axis_array_temp, \
+            plot_metal_or_ligand(f'{metal_symbol_list_temp[metal_index][1]}', time_axis_array_temp, \
                                  np.array(metal_1_concentrations_temp[metal_index]), \
                                      np.array(metal_2_concentrations_temp[metal_index]), \
                                          np.array(metal_3_concentrations_temp[metal_index]))
-            plot_metal_or_ligand(f'{metal_symbol_list_temp[metal_index]} Ligand', time_axis_array_temp, \
+            plot_metal_or_ligand(f'{metal_symbol_list_temp[metal_index][1]} Ligand', time_axis_array_temp, \
                                  np.array(ligand_1_concentrations_temp[metal_index]), \
                                      np.array(ligand_2_concentrations_temp[metal_index]), \
                                          np.array(ligand_3_concentrations_temp[metal_index]))            
             
-        # color_list = ['r', 'g', 'b', 'm-', 'y-', 'c-', 'r', 'g', 'b']
-        
-        # fig, nutri_conc = plt.subplots()
-        # nutri_conc.set_title(f'{title} \n {metal_type}: Change in Nutrient Concentration Over Time \n')
-        # nutri_conc.set_xlabel('Time [log(years)]')
-        # nutri_conc.set_ylabel('Concentration (mol per cubic meter)')
-        # if use_metal:
-        #     ir, metal_axis = plt.subplots()     
-        #     metal_axis.set_title(f'{title} \n {metal_type} Concentrations Over Time \n')
-        #     metal_axis.set_xlabel('Time [log(years)]')
-        #     metal_axis.set_ylabel(f'Concentration of {metal_type} per cubic meter \n (in nmol/m3)')
-        # if use_ligand_cycling:
-        #     lig_graph, lig = plt.subplots()
-        #     lig.set_title(f'{title} \n {metal_type}: Ligand Concentrations Over Time \n')
-        #     lig.set_xlabel('Time [log(years)]')
-        #     lig.set_ylabel('Concentration (mol per cubic meter)')
-        # for conc_index in range(len(conc_name_list)):
-        #     if conc_index <= 2:
-        #         nutri_conc.plot(time_axis_array_log10, array_of_C[conc_index], color_list[conc_index], label = str(conc_name_list[conc_index]))
-        #     if 3 <= conc_index <= 5 and use_metal:
-        #         metal_axis.plot(time_axis_array_log10, array_of_M[conc_index - 3], color_list[conc_index], label = str(conc_name_list[conc_index]))
-        #     if 6 <= conc_index <= 8 and use_ligand_cycling:
-        #         lig.plot(time_axis_array_log10, array_of_L[conc_index - 6], color_list[conc_index], label = str(conc_name_list[conc_index]))
-
-        # nutri_conc.legend(loc = 'best')
-        # if use_metal:
-        #     metal_axis.legend(loc = 'best')
-        # fig.tight_layout()
-        
-        # if use_ligand_cycling:
-        #     lig.legend(loc = 'best')
-        #     lig_graph.tight_layout()
-        # plt.show()
         
     plot_concentrations(title, metal_symbol_list, time_axis_array_log10, C_array, \
                             metal_1_concentrations, metal_2_concentrations, metal_3_concentrations, \
