@@ -432,7 +432,7 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
                   gamma_temp, lambda_ligand_temp, \
                   metal_1_dict_temp, metal_2_dict_temp, metal_3_dict_temp, \
                   K_sat_M_list_temp, alpha_dict_temp, M_in1_dict_temp, M_in2_dict_temp, k_scav_dict_temp, R_M_dict_temp, \
-                  beta_val_dict_temp):
+                  beta_val_dict_temp, dt_temp):
         """
         Takes all initial concentrations and returns all updated values dependent on said
             initial values.
@@ -443,7 +443,7 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
 
         """
         def dM1dt(M_1_input, M_2_input, M_3_input, alpha_temp, M_in1_temp, k_scav_temp, R_M_temp, beta_val_temp):
-            return M_1_input + (psi*(M_3_input - M_1_input) + k_31*(M_3_input - M_1_input) + k_21*(M_2_input - M_1_input))/vol_1 + \
+            return M_1_input + dt_temp*(psi*(M_3_input - M_1_input) + k_31*(M_3_input - M_1_input) + k_21*(M_2_input - M_1_input))/vol_1 + \
                     alpha_temp*M_in1_temp/dz_1 - k_scav_temp*complexation(M_1_input, L_1_input, beta_val_temp)/(60*60*24*365) - R_M_temp*export_1(metal_1_dict_temp, K_sat_M_list_temp, C_1_input)
             
                 # Line 1: General tracer equation, maintains equilibrium among all three boxes with flow rate considered.
@@ -451,44 +451,64 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
                     # Third term represents amount being used up ('biological utilization' as in Parekh, 2004)
 
         def dM2dt(M_1_input, M_2_input, M_3_input, alpha_temp, M_in2_temp, k_scav_temp, R_M_temp, beta_val_temp):
-            return M_2_input + (psi*(M_1_input - M_2_input) + k_12*(M_1_input - M_2_input) + k_32*(M_3_input - M_2_input))/vol_2 + \
+            return M_2_input + dt_temp*(psi*(M_1_input - M_2_input) + k_12*(M_1_input - M_2_input) + k_32*(M_3_input - M_2_input))/vol_2 + \
                     alpha_temp*M_in2_temp/dz_2 - k_scav_temp*complexation(M_2_input, L_2_input, beta_val_temp)/(60*60*24*365) - R_M_temp*export_2(metal_2_dict_temp, K_sat_M_list_temp, C_2_input)
 
         def dM3dt(M_1_input, M_2_input, M_3_input, alpha_temp, k_scav_temp, R_M_temp, beta_val_temp):
-            return M_3_input + (psi*(M_2_input - M_3_input) + k_23*(M_2_input - M_3_input) + k_13*(M_1_input - M_3_input))/vol_3 \
+            return M_3_input + dt_temp*(psi*(M_2_input - M_3_input) + k_23*(M_2_input - M_3_input) + k_13*(M_1_input - M_3_input))/vol_3 \
                 - k_scav_temp*complexation(M_3_input, L_3_input, beta_val_temp)/(60*60*24*365) \
                 + R_M_temp*(export_1(metal_1_dict_temp, K_sat_M_list_temp, C_1_input)*vol_1 + export_2(metal_2_dict_temp, K_sat_M_list_temp, C_2_input)*vol_2)/vol_3
         
         
-        dC1dt = ('C_1', C_1_input + (psi*(C_3_input - C_1_input) + k_31*(C_3_input - C_1_input) + k_21*(C_2_input - C_1_input))/vol_1 \
+        dC1dt = ('C_1', C_1_input + dt_temp*(psi*(C_3_input - C_1_input) + k_31*(C_3_input - C_1_input) + k_21*(C_2_input - C_1_input))/vol_1 \
                 - export_1(metal_1_dict_temp, K_sat_M_list_temp, C_1_input))
-        dC2dt = ('C_2', C_2_input + (psi*(C_1_input - C_2_input) + k_12*(C_1_input - C_2_input) + k_32*(C_3_input - C_2_input))/vol_2 \
+        dC2dt = ('C_2', C_2_input + dt_temp*(psi*(C_1_input - C_2_input) + k_12*(C_1_input - C_2_input) + k_32*(C_3_input - C_2_input))/vol_2 \
                 - export_2(metal_2_dict_temp, K_sat_M_list_temp, C_2_input))
-        dC3dt = ('C_3', C_3_input + (psi*(C_2_input - C_3_input) + k_23*(C_2_input - C_3_input) + k_13*(C_1_input - C_3_input))/vol_3 + \
+        dC3dt = ('C_3', C_3_input + dt_temp*(psi*(C_2_input - C_3_input) + k_23*(C_2_input - C_3_input) + k_13*(C_1_input - C_3_input))/vol_3 + \
                 + (export_1(metal_1_dict_temp, K_sat_M_list_temp, C_1_input)*vol_1 + export_2(metal_2_dict_temp, K_sat_M_list_temp, C_2_input)*vol_2)/vol_3)
-        dL1dt = ('L_1', L_1_input + (psi*(L_3_input - L_1_input) + k_31*(L_3_input - L_1_input) + k_21*(L_2_input - L_1_input))/vol_1 \
+        dL1dt = ('L_1', L_1_input + dt_temp*(psi*(L_3_input - L_1_input) + k_31*(L_3_input - L_1_input) + k_21*(L_2_input - L_1_input))/vol_1 \
                  + gamma_temp*export_1(metal_1_dict_temp, K_sat_M_list_temp, C_1_input) \
                 - lambda_ligand_temp*L_1_input)
-        dL2dt = ('L_2', L_2_input + (psi*(L_1_input - L_2_input) + k_12*(L_1_input - L_2_input) + k_32*(L_3_input - L_2_input))/vol_2 \
+        dL2dt = ('L_2', L_2_input + dt_temp*(psi*(L_1_input - L_2_input) + k_12*(L_1_input - L_2_input) + k_32*(L_3_input - L_2_input))/vol_2 \
                  + gamma_temp*export_2(metal_2_dict_temp, K_sat_M_list_temp, C_2_input) \
                 - lambda_ligand_temp*L_2_input)
-        dL3dt = ('L_3', L_3_input + (psi*(L_2_input - L_3_input) + k_23*(L_2_input - L_3_input) + k_13*(L_1_input - L_3_input))/vol_3 \
+        dL3dt = ('L_3', L_3_input + dt_temp*(psi*(L_2_input - L_3_input) + k_23*(L_2_input - L_3_input) + k_13*(L_1_input - L_3_input))/vol_3 \
                  - lambda_ligand_temp/100*L_3_input \
                 + gamma_temp/vol_3*(export_1(metal_1_dict_temp, K_sat_M_list_temp, C_1_input)*vol_1 + export_2(metal_2_dict_temp, K_sat_M_list_temp, C_2_input)*vol_2))
         
         return_list = [dC1dt, dC2dt, dC3dt, dL1dt, dL2dt, dL3dt]
         
-        for metal_conc in conc_name_list_temp:
-            return_list.append((f'{metal_conc}_1', dM1dt(metal_1_dict_temp[f'{metal_conc}_1'], metal_2_dict_temp[f'{metal_conc}_2'], metal_3_dict_temp[f'{metal_conc}_3'], \
-                                                         alpha_dict_temp[metal_conc], M_in1_dict_temp[metal_conc], k_scav_dict_temp[metal_conc], \
-                                                             R_M_dict_temp[metal_conc], beta_val_dict_temp[metal_conc])))
-            return_list.append((f'{metal_conc}_2', dM2dt(metal_1_dict_temp[f'{metal_conc}_1'], metal_2_dict_temp[f'{metal_conc}_2'], metal_3_dict_temp[f'{metal_conc}_3'], \
-                                                         alpha_dict_temp[metal_conc], M_in2_dict_temp[metal_conc], k_scav_dict_temp[metal_conc], \
-                                                             R_M_dict_temp[metal_conc], beta_val_dict_temp[metal_conc])))
-            return_list.append((f'{metal_conc}_3', dM1dt(metal_1_dict_temp[f'{metal_conc}_1'], metal_2_dict_temp[f'{metal_conc}_2'], metal_3_dict_temp[f'{metal_conc}_3'], \
-                                                         alpha_dict_temp[metal_conc], k_scav_dict_temp[metal_conc], \
-                                                             R_M_dict_temp[metal_conc], beta_val_dict_temp[metal_conc])))
+        m_1_temp = []
+        m_2_temp = []
+        m_3_temp = []
         
+        for metal_conc in conc_name_list_temp:
+            temp_tuple_1 = (f'{metal_conc}_1', dM1dt(metal_1_dict_temp[f'{metal_conc}_1'], metal_2_dict_temp[f'{metal_conc}_2'], metal_3_dict_temp[f'{metal_conc}_3'], \
+                                                         alpha_dict_temp[metal_conc], M_in1_dict_temp[metal_conc], k_scav_dict_temp[metal_conc], \
+                                                             R_M_dict_temp[metal_conc], beta_val_dict_temp[metal_conc]))
+            return_list.append(temp_tuple_1)
+            m_1_temp.append(temp_tuple_1)
+            
+            temp_tuple_2 = (f'{metal_conc}_2', dM2dt(metal_1_dict_temp[f'{metal_conc}_1'], metal_2_dict_temp[f'{metal_conc}_2'], metal_3_dict_temp[f'{metal_conc}_3'], \
+                                                         alpha_dict_temp[metal_conc], M_in2_dict_temp[metal_conc], k_scav_dict_temp[metal_conc], \
+                                                             R_M_dict_temp[metal_conc], beta_val_dict_temp[metal_conc]))
+            return_list.append(temp_tuple_2)
+            m_2_temp.append(temp_tuple_2)
+            
+            temp_tuple_3 = (f'{metal_conc}_3', dM3dt(metal_1_dict_temp[f'{metal_conc}_1'], metal_2_dict_temp[f'{metal_conc}_2'], metal_3_dict_temp[f'{metal_conc}_3'], \
+                                                         alpha_dict_temp[metal_conc], k_scav_dict_temp[metal_conc], \
+                                                             R_M_dict_temp[metal_conc], beta_val_dict_temp[metal_conc]))
+            return_list.append(temp_tuple_3)
+            m_3_temp.append(temp_tuple_3)
+                
+        # Now that we have our return_list, update the dictionaries from which we got the concentration values to be used in the next iteration(s).
+        
+        
+        for conc_index in range(len(m_1_temp)):
+            metal_1_dict_temp[m_1_temp[conc_index][0]] = m_1_temp[conc_index][1]
+            metal_2_dict_temp[m_2_temp[conc_index][0]] = m_2_temp[conc_index][1]
+            metal_3_dict_temp[m_3_temp[conc_index][0]] = m_3_temp[conc_index][1]
+
         return dict(return_list)
         
     def complexation(metal_tot, ligand_tot, beta):
@@ -649,18 +669,6 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
         beta_val_dict[metal_name_list[var_index]] = beta_val_list[var_index][1]
         R_M_dict[metal_name_list[var_index]] = R_M_list[var_index][1]
         
-    print(metal_in1_dict)
-    print(metal_in2_dict)
-    print(alpha_dict)
-    print(k_scav_dict)
-    print(beta_val_dict)
-    print(R_M_dict)
-    
-    raise NotImplementedError
-        
-    
-    
-
     ## Initiate Time Variables
     
     dt = dt_in_years*60*60*24*365  #Total number of seconds representing a year. 
@@ -713,9 +721,7 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
     
     # Create labels for each tracer in each box
     conc_vars = list(map('_'.join, itertools.product(conc_list, nbox)))
-    
-    print(conc_vars)
-    
+      
     # Create DataFrame with initial concentrations for all variables. 
     
     # First combine lists of all concentrations, with intent to convert to dictionary of
@@ -741,20 +747,28 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
     
     init_concs = dict(all_concs)
     
-    print(init_concs)
-    
-    raise NotImplementedError
-    
     # Finally add these initial values to the start of the dataframe
     
     for var in conc_vars:
         conc_pd.loc[0, var] = init_concs[var]
 
+    # Iterate over time axis array.
     
-    
+    for t_val in range(len(time_axis_array))[1:]:
+        conc_pd.loc[t_val] = dtotal_dt\
+            (conc_pd.loc[(t_val - 1), 'C_1'], conc_pd.loc[(t_val - 1), 'C_2'], conc_pd.loc[(t_val - 1), 'C_3'], \
+                  conc_pd.loc[(t_val - 1), 'L_1'], conc_pd.loc[(t_val - 1), 'L_2'], conc_pd.loc[(t_val - 1), 'L_3'], \
+                  metal_name_list, \
+                  gamma, lambda_ligand, \
+                  init_concs_metal_1, init_concs_metal_2, init_concs_metal_3, \
+                  K_sat_M_list, alpha_dict, metal_in1_dict, metal_in2_dict, k_scav_dict, R_M_dict, \
+                  beta_val_dict, dt)
+        print(conc_pd)
+
     print(conc_pd)
-    
+
     raise NotImplementedError
+    
     # init_concs_frame = pd.DataFrame()
 
         # Initiate lists that will store the three concentrations, with initial concentrations already
