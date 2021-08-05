@@ -13,6 +13,11 @@ import itertools
 
 ### -----------------------------------------------------------------------------
 
+## Creating Class to Solve ODEs
+
+class solve_ode_timestep(object):
+    pass
+
 ## Establishing Global Quantities
 
 ## Establishing Dimensions of Three Boxes (all values have units of meters)
@@ -126,6 +131,392 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
     
     ## Yet to be implemented.    
     
+    ## Differential Functions
+    
+    # Cycling of Matter ---------------------------------------------
+    # TBD
+
+    
+    # Export Production --------------------------------------------------
+    
+    def export_1(metal_1_dict_tent, K_sat_M_list_tent, C_1_input = C_1):
+        """
+        Calculates export of organic matter from box 1, considering the Michaelis-Menten
+        approach and the liebig/multiplicative limit approach.
+        
+        Parameters:
+            None
+        Returns
+            Float, representing the total export of organic matter from box 1 according to current
+            concentration of light, nutrient, and metal.
+        """
+        global light_dependent_change_in_C_1
+        global nutrient_dependent_change_in_C_1
+        global metal_dependent_change_in_C_1
+        light_dependent_change_in_C_1 = (Ibox1/(K_sat_l + Ibox1))
+        nutrient_dependent_change_in_C_1 = ((C_1_input)/(K_sat_N + C_1_input))
+        
+        # Convert Passed In Dictionary to List
+        metal_1_list_tent = [element for element in metal_1_dict_tent.items()]
+        
+        # Initiate list of tuples with metal concentration and K_sat_M.
+        metal_constant_list = []
+        for metal_index in range(len(metal_1_list_tent)):
+            metal_constant_list.append((metal_1_list_tent[metal_index][1], K_sat_M_list_tent[metal_index][1]))
+
+        # Create list of metal_dependent_changes and save it to global list.
+        metal_dependent_change_in_C_1 = \
+            [(M_1_input/(K_sat_M_s + M_1_input)) for M_1_input, K_sat_M_s in metal_constant_list]
+
+        # Find minimum in list
+        metal_dependent_change_in_C_1_min = min(metal_dependent_change_in_C_1)
+
+        return mic_ment_light_leibig*V_max*min([light_dependent_change_in_C_1, nutrient_dependent_change_in_C_1, metal_dependent_change_in_C_1_min]) \
+                        + mic_ment_light_mult_lim*V_max*light_dependent_change_in_C_1*nutrient_dependent_change_in_C_1*float(np.prod(np.array(metal_dependent_change_in_C_1)))
+
+            # Exports governed by the Michaelis-Menton model, considering the Liebig and Multiplicative method of limit.
+    
+    def export_2(metal_2_dict_tent, K_sat_M_list_tent, C_2_input = C_2):
+        """
+        Calculates export of organic matter from box 1, considering the Michaelis-Menten
+        approach and the liebig/multiplicative limit approach.
+        
+        Parameters:
+            None
+        Returns
+            Float, representing the total export of organic matter from box 1 according to current
+            concentration of light, nutrient, and metal.
+        """
+        global light_dependent_change_in_C_2
+        global nutrient_dependent_change_in_C_2
+        global metal_dependent_change_in_C_2
+        light_dependent_change_in_C_2 = (Ibox2/(K_sat_l + Ibox2))
+        nutrient_dependent_change_in_C_2 = ((C_2_input)/(K_sat_N + C_2_input))
+
+        # Convert passed-in dict to list
+        
+        metal_2_list_tent = [element for element in metal_2_dict_tent.items()]
+
+        # Initiate list of tuples with metal concentration and K_sat_M.
+        metal_constant_list = []
+        for metal_index in range(len(metal_2_list_tent)):
+            metal_constant_list.append((metal_2_list_tent[metal_index][1], K_sat_M_list_tent[metal_index][1]))
+      
+        # Create list of metal_dependent_changes and save it to global list.
+        metal_dependent_change_in_C_2 = \
+            [(M_2_input/(K_sat_M_s + M_2_input)) for (M_2_input, K_sat_M_s) in metal_constant_list]
+        
+        # Find minimum in list
+        metal_dependent_change_in_C_2_min = min(metal_dependent_change_in_C_2)
+
+        
+        return mic_ment_light_leibig*V_max*min([light_dependent_change_in_C_2, nutrient_dependent_change_in_C_2, metal_dependent_change_in_C_2_min]) \
+                        + mic_ment_light_mult_lim*V_max*light_dependent_change_in_C_2*nutrient_dependent_change_in_C_2*float(np.prod(np.array(metal_dependent_change_in_C_2)))
+
+            # Exports governed by the Michaelis-Menten model, considering both the Liebig and Multiplicative methods of limitation.    
+          
+    # Concentration of Nutrients --------------------------------------------------
+    # def dC_1_over_dt(metal_1_list_temp, K_sat_M_list_temp, C_1_input = C_1, C_2_input = C_2, C_3_input = C_3):
+    #     """
+    #     Calculates change in concentration of C_1 per cubic meter, in units of 
+    #     moles of C_1 per cubic meter per unit time.
+        
+    #     The quanities needed are stored in the variables defined earlier. 
+        
+    
+    #     Returns
+    #     -------
+    #     Number quantity reflecting change of C_1 per unit time, governed by the flow
+    #     rates and the concentrations at the given times.
+    
+    #     """
+            
+    #     return (psi*(C_3_input - C_1_input) + k_31*(C_3_input - C_1_input) + k_21*(C_2_input - C_1_input))/vol_1 \
+    #             - export_1(metal_1_list_temp, K_sat_M_list_temp, C_1_input) 
+                        
+    #     # Line 1: General tracer equation, maintains equilibrium among all three boxes with flow rate considered.
+    #     # Line 2: Given fixed export rate lambda_1, considers the box's export rate dependent on nutrient concentration in given box.
+    #     # Line 3: Amount of matter exported according to the given export function.
+                
+                    
+    # def dC_2_over_dt(metal_2_list_temp, K_sat_M_list_temp, C_1_input = C_1, C_2_input = C_2, C_3_input = C_3):
+    #     """
+    #     Calculates change in concentration of C_2 per cubic meter, in units of 
+    #     moles of C_2 per cubic meter per unit time.
+        
+    #     The quanities needed are stored in the variables defined earlier. 
+        
+    
+    #     Returns
+    #     -------
+    #     Number quantity reflecting change of C_2 per unit time, governed by the flow
+    #     rates and the concentrations at the given times.
+    
+    #     """
+        
+    #     return (psi*(C_1_input - C_2_input) + k_12*(C_1_input - C_2_input) + k_32*(C_3_input - C_2_input))/vol_2 \
+    #             - export_2(metal_2_list_temp, K_sat_M_list_temp, C_2_input)
+
+    #     # Line 1: General tracer equation, maintains equilibrium among all three boxes with flow rate considered.
+    #     # Line 2: Amount of matter exported according to the given export function.
+            
+    # def dC_3_over_dt(metal_1_list_temp, metal_2_list_temp, K_sat_M_list_temp, \
+    #                  C_1_input = C_1, C_2_input = C_2, C_3_input = C_3):
+    #     """
+    #     Calculates change in concentration of C_3 per cubic meter, in units of 
+    #     moles of C_3 per cubic meter per unit time.
+        
+    #     The quanities needed are stored in the variables defined earlier. 
+        
+    
+    #     Returns
+    #     -------
+    #     Number quantity reflecting change of C_3 per unit time, governed by the flow
+    #     rates and the concentrations at the given times.
+    
+    #     """
+        
+    #     return (psi*(C_2_input - C_3_input) + k_23*(C_2_input - C_3_input) + k_13*(C_1_input - C_3_input))/vol_3 + \
+    #             + (export_1(metal_1_list_temp, K_sat_M_list_temp, C_1_input)*vol_1 + export_2(metal_2_list_temp, K_sat_M_list_temp, C_2_input)*vol_2)/vol_3
+                
+    #     # Line 1: General tracer equation, maintains equilibrium among all three boxes with flow rate considered.
+    #     # Line 2: Amount of matter exported according to the given export function.
+
+    # # Concentration of metal (or any trace metal in fact) -----------------------------
+    
+    # def dM_1_over_dt(metal_1_list_temp, K_sat_M_list_temp, \
+    #                  alpha_temp, M_in1_temp, k_scav_temp, beta_val_temp, R_M_temp, \
+    #                  M_1_input = M_1, M_2_input = M_2, M_3_input = M_3, \
+    #                  C_1_input = C_1, L_1_input = L_1):
+    #     """
+    #     Calculates change in concentration of M_1_input per cubic meter, in units of 
+    #     moles of M_1 per cubic meter per unit time.
+        
+    #     The quanities needed are stored in the variables defined earlier. 
+        
+    
+    #     Returns
+    #     -------
+    #     Number quantity reflecting change of M_1 per unit time, governed by the flow
+    #     rates and the concentrations at the given times.
+    #     """
+            
+    #     return (psi*(M_3_input - M_1_input) + k_31*(M_3_input - M_1_input) + k_21*(M_2_input - M_1_input))/vol_1 + \
+    #         alpha_temp*M_in1_temp/dz_1 - k_scav_temp*complexation(M_1_input, L_1_input, beta_val_temp)/(60*60*24*365) - R_M_temp*export_1(metal_1_list_temp, K_sat_M_list_temp, C_1_input)
+            
+    #             # Line 1: General tracer equation, maintains equilibrium among all three boxes with flow rate considered.
+    #             # Line 2: First term represents source, second term represents sink (in terms of being scavenged)
+    #                 # Third term represents amount being used up ('biological utilization' as in Parekh, 2004)
+
+    # def dM_2_over_dt(metal_2_list_temp, K_sat_M_list_temp, \
+    #                  alpha_temp, M_in2_temp, k_scav_temp, beta_val_temp, R_M_temp, \
+    #                  M_1_input = M_1, M_2_input = M_2, M_3_input = M_3, \
+    #                  C_2_input = C_2, L_2_input = L_2):
+    #     """
+    #     Calculates change in concentration of M_2 per cubic meter, in units of 
+    #     moles of M_2 per cubic meter per unit time.
+        
+    #     The quanities needed are stored in the variables defined earlier. 
+        
+    
+    #     Returns
+    #     -------
+    #     Number quantity reflecting change of M_2 per unit time, governed by the flow
+    #     rates and the concentrations at the given times.
+    #     """
+            
+    #     return (psi*(M_1_input - M_2_input) + k_12*(M_1_input - M_2_input) + k_32*(M_3_input - M_2_input))/vol_2 + \
+    #        alpha_temp*M_in2_temp/dz_2 - k_scav_temp*complexation(M_2_input, L_2_input, beta_val_temp)/(60*60*24*365) - R_M_temp*export_2(metal_2_list_temp, K_sat_M_list_temp, C_2_input)
+        
+    # def dM_3_over_dt(metal_1_list_temp, metal_2_list_temp, K_sat_M_list_temp, \
+    #                  alpha_temp, k_scav_temp, beta_val_temp, R_M_temp, \
+    #                  M_1_input = M_1, M_2_input = M_2, M_3_input = M_3, \
+    #                  C_1_input = C_1, C_2_input = C_2, \
+    #                  L_1_input = L_1, L_2_input = L_2, L_3_input = L_3):
+    #     """
+    #     Calculates change in concentration of M_3 per cubic meter, in units of 
+    #     moles of M_3 per cubic meter per unit time.
+        
+    #     The quanities needed are stored in the variables defined earlier. 
+        
+    
+    #     Returns
+    #     -------
+    #     Number quantity reflecting change of M_2 per unit time, governed by the flow
+    #     rates and the concentrations at the given times.
+    #     """
+
+    #     return (psi*(M_2_input - M_3_input) + k_23*(M_2_input - M_3_input) + k_13*(M_1_input - M_3_input))/vol_3 \
+    #          - k_scav_temp*complexation(M_3_input, L_3_input, beta_val_temp)/(60*60*24*365) \
+    #             + R_M_temp*(export_1(metal_1_list_temp, K_sat_M_list_temp, C_1_input)*vol_1 + export_2(metal_2_list_temp, K_sat_M_list_temp, C_2_input)*vol_2)/vol_3
+
+    # ### To find the free ion concentration at any given moment, the following function
+    # ### calculates exactly that given our concentration of ligand, metal, and beta constant.
+    # ### (via complexation)
+    
+    # # Concentration of Ligands -----------------------------------------------------
+    
+    # def dLt_1_over_dt(gamma_temp, lambda_ligand_temp, \
+    #                   metal_1_list_temp, K_sat_M_list_temp, \
+    #                   L_1_input = L_1, L_2_input = L_2, L_3_input = L_3, \
+    #                   C_1_input = C_1, M_1_input = M_1):
+    #     """
+    #     Calculates change in total ligand in specified box in units of mols per cubic meter.
+    #     Addresses ligands cycling through the three boxes, as well as sources/sinks.
+    #     Parameters
+    #     ----------
+    #         None.
+    #     Returns
+    #     -------
+    #     Value in units of mols per cubic meter per second (changing concentration of ligand)
+    #     """
+    #     return (psi*(L_3_input - L_1_input) + k_31*(L_3_input - L_1_input) + k_21*(L_2_input - L_1_input))/vol_1 \
+    #         + gamma_temp*export_1(metal_1_list_temp, K_sat_M_list_temp, C_1_input) \
+    #             - lambda_ligand_temp*L_1_input
+
+    #                 # Line 1: Cycling of ligands in and out of box 1.
+    #                 # Line 2: Source (with appropriate gamma)
+    #                 # Line 3: Loss of ligands to degredation.
+                
+    # def dLt_2_over_dt(gamma_temp, lambda_ligand_temp, \
+    #                   metal_2_list_temp, K_sat_M_list_temp, \
+    #                   L_1_input = L_1, L_2_input = L_2, L_3_input = L_3, \
+    #                   C_2_input = C_2, M_2_input = M_2):
+    #     """
+    #     Calculates change in total ligand in specified box in units of mols per cubic meter.
+    #     Addresses ligands cycling through the three boxes, as well as sources/sinks.
+    #     Parameters
+    #     ----------
+    #         None.
+    #     Returns
+    #     -------
+    #     Value in units of mols per cubic meter per second (changing concentration of ligand)
+    #     """        
+    #     return (psi*(L_1_input - L_2_input) + k_12*(L_1_input - L_2_input) + k_32*(L_3_input - L_2_input))/vol_2 \
+    #         + gamma_temp*export_2(metal_2_list_temp, K_sat_M_list_temp, C_2_input) \
+    #             - lambda_ligand_temp*L_2_input
+                
+    #                 # Line 1: Cycling of ligands in and out of box 2.
+    #                 # Line 2: Source (with appropriate gamma)
+    #                 # Line 3: Loss of ligands to degredation.
+                    
+    # def dLt_3_over_dt(gamma_temp, lambda_ligand_temp, \
+    #                   metal_1_list_temp, metal_2_list_temp, K_sat_M_list_temp, \
+    #                   L_1_input = L_1, L_2_input = L_2, L_3_input = L_3, \
+    #                   C_1_input = C_1, C_2_input = C_2, \
+    #                   M_1_input = M_1, M_2_input = M_2):
+    #     """
+    #     Calculates change in total ligand in specified box in units of mols per cubic meter.
+    #     Addresses ligands cycling through the three boxes, as well as sources/sinks.
+    #     Parameters
+    #     ----------
+    #         None.
+    #     Returns
+    #     -------
+    #     Value in units of mols per cubic meter per second (changing concentration of ligand)
+    #     """        
+    #     return (psi*(L_2_input - L_3_input) + k_23*(L_2_input - L_3_input) + k_13*(L_1_input - L_3_input))/vol_3 \
+    #         - lambda_ligand_temp/100*L_3_input \
+    #             + gamma_temp/vol_3*(export_1(metal_1_list_temp, K_sat_M_list_temp, C_1_input)*vol_1 + export_2(metal_2_list_temp, K_sat_M_list_temp, C_2_input)*vol_2)
+            
+    #         # Line 1: Cycling of ligands
+    #         # Line 2: Loss of ligand
+    #         # Line 3: Input of ligands based on export 'reception'
+        
+    # Complexation, causes differentiation between total and free metal (or any other metal) ------------------------
+    
+    
+    def dtotal_dt(C_1_input, C_2_input, C_3_input, \
+                  L_1_input, L_2_input, L_3_input, \
+                  conc_name_list_temp, \
+                  gamma_temp, lambda_ligand_temp, \
+                  metal_1_dict_temp, metal_2_dict_temp, metal_3_dict_temp, \
+                  K_sat_M_list_temp, alpha_dict_temp, M_in1_dict_temp, M_in2_dict_temp, k_scav_dict_temp, R_M_dict_temp, \
+                  beta_val_dict_temp):
+        """
+        Takes all initial concentrations and returns all updated values dependent on said
+            initial values.
+
+        Returns
+        -------
+        Dictionary mapping element/metal to new concentration value.
+
+        """
+        def dM1dt(M_1_input, M_2_input, M_3_input, alpha_temp, M_in1_temp, k_scav_temp, R_M_temp, beta_val_temp):
+            return M_1_input + (psi*(M_3_input - M_1_input) + k_31*(M_3_input - M_1_input) + k_21*(M_2_input - M_1_input))/vol_1 + \
+                    alpha_temp*M_in1_temp/dz_1 - k_scav_temp*complexation(M_1_input, L_1_input, beta_val_temp)/(60*60*24*365) - R_M_temp*export_1(metal_1_dict_temp, K_sat_M_list_temp, C_1_input)
+            
+                # Line 1: General tracer equation, maintains equilibrium among all three boxes with flow rate considered.
+                # Line 2: First term represents source, second term represents sink (in terms of being scavenged)
+                    # Third term represents amount being used up ('biological utilization' as in Parekh, 2004)
+
+        def dM2dt(M_1_input, M_2_input, M_3_input, alpha_temp, M_in2_temp, k_scav_temp, R_M_temp, beta_val_temp):
+            return M_2_input + (psi*(M_1_input - M_2_input) + k_12*(M_1_input - M_2_input) + k_32*(M_3_input - M_2_input))/vol_2 + \
+                    alpha_temp*M_in2_temp/dz_2 - k_scav_temp*complexation(M_2_input, L_2_input, beta_val_temp)/(60*60*24*365) - R_M_temp*export_2(metal_2_dict_temp, K_sat_M_list_temp, C_2_input)
+
+        def dM3dt(M_1_input, M_2_input, M_3_input, alpha_temp, k_scav_temp, R_M_temp, beta_val_temp):
+            return M_3_input + (psi*(M_2_input - M_3_input) + k_23*(M_2_input - M_3_input) + k_13*(M_1_input - M_3_input))/vol_3 \
+                - k_scav_temp*complexation(M_3_input, L_3_input, beta_val_temp)/(60*60*24*365) \
+                + R_M_temp*(export_1(metal_1_dict_temp, K_sat_M_list_temp, C_1_input)*vol_1 + export_2(metal_2_dict_temp, K_sat_M_list_temp, C_2_input)*vol_2)/vol_3
+        
+        
+        dC1dt = ('C_1', C_1_input + (psi*(C_3_input - C_1_input) + k_31*(C_3_input - C_1_input) + k_21*(C_2_input - C_1_input))/vol_1 \
+                - export_1(metal_1_dict_temp, K_sat_M_list_temp, C_1_input))
+        dC2dt = ('C_2', C_2_input + (psi*(C_1_input - C_2_input) + k_12*(C_1_input - C_2_input) + k_32*(C_3_input - C_2_input))/vol_2 \
+                - export_2(metal_2_dict_temp, K_sat_M_list_temp, C_2_input))
+        dC3dt = ('C_3', C_3_input + (psi*(C_2_input - C_3_input) + k_23*(C_2_input - C_3_input) + k_13*(C_1_input - C_3_input))/vol_3 + \
+                + (export_1(metal_1_dict_temp, K_sat_M_list_temp, C_1_input)*vol_1 + export_2(metal_2_dict_temp, K_sat_M_list_temp, C_2_input)*vol_2)/vol_3)
+        dL1dt = ('L_1', L_1_input + (psi*(L_3_input - L_1_input) + k_31*(L_3_input - L_1_input) + k_21*(L_2_input - L_1_input))/vol_1 \
+                 + gamma_temp*export_1(metal_1_dict_temp, K_sat_M_list_temp, C_1_input) \
+                - lambda_ligand_temp*L_1_input)
+        dL2dt = ('L_2', L_2_input + (psi*(L_1_input - L_2_input) + k_12*(L_1_input - L_2_input) + k_32*(L_3_input - L_2_input))/vol_2 \
+                 + gamma_temp*export_2(metal_2_dict_temp, K_sat_M_list_temp, C_2_input) \
+                - lambda_ligand_temp*L_2_input)
+        dL3dt = ('L_3', L_3_input + (psi*(L_2_input - L_3_input) + k_23*(L_2_input - L_3_input) + k_13*(L_1_input - L_3_input))/vol_3 \
+                 - lambda_ligand_temp/100*L_3_input \
+                + gamma_temp/vol_3*(export_1(metal_1_dict_temp, K_sat_M_list_temp, C_1_input)*vol_1 + export_2(metal_2_dict_temp, K_sat_M_list_temp, C_2_input)*vol_2))
+        
+        return_list = [dC1dt, dC2dt, dC3dt, dL1dt, dL2dt, dL3dt]
+        
+        for metal_conc in conc_name_list_temp:
+            return_list.append((f'{metal_conc}_1', dM1dt(metal_1_dict_temp[f'{metal_conc}_1'], metal_2_dict_temp[f'{metal_conc}_2'], metal_3_dict_temp[f'{metal_conc}_3'], \
+                                                         alpha_dict_temp[metal_conc], M_in1_dict_temp[metal_conc], k_scav_dict_temp[metal_conc], \
+                                                             R_M_dict_temp[metal_conc], beta_val_dict_temp[metal_conc])))
+            return_list.append((f'{metal_conc}_2', dM2dt(metal_1_dict_temp[f'{metal_conc}_1'], metal_2_dict_temp[f'{metal_conc}_2'], metal_3_dict_temp[f'{metal_conc}_3'], \
+                                                         alpha_dict_temp[metal_conc], M_in2_dict_temp[metal_conc], k_scav_dict_temp[metal_conc], \
+                                                             R_M_dict_temp[metal_conc], beta_val_dict_temp[metal_conc])))
+            return_list.append((f'{metal_conc}_3', dM1dt(metal_1_dict_temp[f'{metal_conc}_1'], metal_2_dict_temp[f'{metal_conc}_2'], metal_3_dict_temp[f'{metal_conc}_3'], \
+                                                         alpha_dict_temp[metal_conc], k_scav_dict_temp[metal_conc], \
+                                                             R_M_dict_temp[metal_conc], beta_val_dict_temp[metal_conc])))
+        
+        return dict(return_list)
+        
+    def complexation(metal_tot, ligand_tot, beta):
+        """
+        Given a total metal concentration, ligand concentration, and beta value, this
+        function will return the total concentration of free metal that is not bound to
+        ligands (i.e. is free and prone to scavanging).
+        Parameters
+        ----------
+        metal_tot : float 
+            current total concentration of metal, value in mol per cubic meter 
+        ligand_tot : float
+            current total concentration of ligand, value in mol per cubic meter
+        beta : float
+            constant value, defines equilibrium position between free metal + ligand
+            and the complexed form. Value in kg/mol
+        Returns
+        -------
+        Float, current concentration of free metal.
+        """
+        term_1 = (metal_tot - 1/beta - ligand_tot)/2
+        term_2 = ((beta*(ligand_tot - metal_tot + 1/beta)**2 + 4*metal_tot)/(4*beta))**(1/2)
+    
+        return term_1 + term_2
+    
+    # ...................................................................................
+    ### Creation of Variables and Using Above-Defined Functions
+    # ...................................................................................
     
     ## Initiate Lists With Additional *args passed in, as well as initial concentrations.
     
@@ -144,9 +535,9 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
     use_ligand_cycling_list = [('use_ligand_cycling_M', use_ligand_cycling), ]
     gamma_list = [('gamma_M', gamma), ]
     lambda_ligand_list = [('lambda_ligand_M', lambda_ligand), ]
-    L_1_init_list = [('L_1_M', L_1), ]
-    L_2_init_list = [('L_2_M', L_2), ]
-    L_3_init_list = [('L_3_M', L_3), ]
+    # L_1_init_list = [('L_1_M', L_1), ]
+    # L_2_init_list = [('L_2_M', L_2), ]
+    # L_3_init_list = [('L_3_M', L_3), ]
     
 
     for parameter_val in other_metal_parameters.items():
@@ -180,12 +571,12 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
             gamma_list.append(parameter_val)
         elif parameter_val[0].startswith('lambda_ligand'):
             lambda_ligand.append(parameter_val)
-        elif parameter_val[0].startswith('L_1_'):
-            L_1_init_list.append(parameter_val)
-        elif parameter_val[0].startswith('L_2_'):
-            L_2_init_list.append(parameter_val)
-        elif parameter_val[0].startswith('L_3_'):
-            L_3_init_list.append(parameter_val)
+        # elif parameter_val[0].startswith('L_1_'):
+        #     L_1_init_list.append(parameter_val)
+        # elif parameter_val[0].startswith('L_2_'):
+        #     L_2_init_list.append(parameter_val)
+        # elif parameter_val[0].startswith('L_3_'):
+        #     L_3_init_list.append(parameter_val)
             
     # Sort initiated lists in alphabetical order to help with matching values from different lists.
     
@@ -204,9 +595,71 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
     use_ligand_cycling_list.sort()
     gamma_list.sort()
     lambda_ligand_list.sort()
-    L_1_init_list.sort()
-    L_2_init_list.sort()
-    L_3_init_list.sort()
+    # L_1_init_list.sort()
+    # L_2_init_list.sort()
+    # L_3_init_list.sort()
+
+    ## After collecting the above information into appropriate lists, convert them into dictionaries where
+    ## the key is in format 'element + box label' to make the next functions readable and accessible via key rather than order. 
+    
+    
+    # Metal Concentrations
+    
+    all_concs = [('C_1', C_1), ('C_2', C_2), ('C_3', C_3), \
+             ('L_1', L_1), ('L_2', L_2), ('L_3', L_3)]
+        
+    # Iterate over all three lists so that the first element of the tuple is renamed
+    # to the metal symbol, followed by element concentration. 
+    
+    metal_conc_symbol_tot = []
+    metal_1_conc_symbol = []
+    metal_2_conc_symbol = []
+    metal_3_conc_symbol = []
+    for val_index in range(len(metal_symbol_list)):
+        metal_conc_symbol_tot.append((f'{metal_symbol_list[val_index][1]}_1', metal_1_list[val_index][1]))
+        metal_conc_symbol_tot.append((f'{metal_symbol_list[val_index][1]}_2', metal_2_list[val_index][1]))
+        metal_conc_symbol_tot.append((f'{metal_symbol_list[val_index][1]}_3', metal_3_list[val_index][1]))
+        metal_1_conc_symbol.append((f'{metal_symbol_list[val_index][1]}_1', metal_1_list[val_index][1]))
+        metal_2_conc_symbol.append((f'{metal_symbol_list[val_index][1]}_2', metal_2_list[val_index][1]))
+        metal_3_conc_symbol.append((f'{metal_symbol_list[val_index][1]}_3', metal_3_list[val_index][1]))
+    
+    all_concs.extend(metal_conc_symbol_tot)
+    
+    init_concs = dict(all_concs)
+    init_concs_metal_1 = dict(metal_1_conc_symbol)
+    init_concs_metal_2 = dict(metal_2_conc_symbol)
+    init_concs_metal_3 = dict(metal_3_conc_symbol)
+
+    ## Converting the rest of the important lists into dictionaries with same keys.
+    
+    metal_name_list = [element_symbol[1] for element_symbol in metal_symbol_list]
+    
+    metal_in1_dict = {}
+    metal_in2_dict = {}
+    alpha_dict = {}
+    k_scav_dict = {}
+    beta_val_dict = {}
+    R_M_dict = {}
+    
+    for var_index in range(len(metal_name_list)):
+        metal_in1_dict[metal_name_list[var_index]] = metal_in_1_list[var_index][1]
+        metal_in2_dict[metal_name_list[var_index]] = metal_in_2_list[var_index][1]
+        alpha_dict[metal_name_list[var_index]] = alpha_list[var_index][1]
+        k_scav_dict[metal_name_list[var_index]] = k_scav_list[var_index][1]
+        beta_val_dict[metal_name_list[var_index]] = beta_val_list[var_index][1]
+        R_M_dict[metal_name_list[var_index]] = R_M_list[var_index][1]
+        
+    print(metal_in1_dict)
+    print(metal_in2_dict)
+    print(alpha_dict)
+    print(k_scav_dict)
+    print(beta_val_dict)
+    print(R_M_dict)
+    
+    raise NotImplementedError
+        
+    
+    
 
     ## Initiate Time Variables
     
@@ -222,318 +675,6 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
     metal_dependent_change_in_C_2 = [0 for items in metal_2_list]
     
     # ...........................................................................
-    
-    ## Differential Functions
-    
-    # Cycling of Matter ---------------------------------------------
-    # TBD
-
-    
-    # Export Production --------------------------------------------------
-    
-    def export_1(metal_1_list_tent, K_sat_M_list_tent, C_1_input = C_1):
-        """
-        Calculates export of organic matter from box 1, considering the Michaelis-Menten
-        approach and the liebig/multiplicative limit approach.
-        
-        Parameters:
-            None
-        Returns
-            Float, representing the total export of organic matter from box 1 according to current
-            concentration of light, nutrient, and metal.
-        """
-        global light_dependent_change_in_C_1
-        global nutrient_dependent_change_in_C_1
-        global metal_dependent_change_in_C_1
-        light_dependent_change_in_C_1 = (Ibox1/(K_sat_l + Ibox1))
-        nutrient_dependent_change_in_C_1 = ((C_1_input)/(K_sat_N + C_1_input))
-        
-        # Initiate list of tuples with metal concentration and K_sat_M.
-        metal_constant_list = []
-        for metal_index in range(len(metal_1_list_tent)):
-            metal_constant_list.append((metal_1_list_tent[metal_index][1], K_sat_M_list_tent[metal_index][1]))
-
-        # Create list of metal_dependent_changes and save it to global list.
-        metal_dependent_change_in_C_1 = \
-            [(M_1_input/(K_sat_M_s + M_1_input)) for M_1_input, K_sat_M_s in metal_constant_list]
-
-        # Find minimum in list
-        metal_dependent_change_in_C_1_min = min(metal_dependent_change_in_C_1)
-
-        return mic_ment_light_leibig*V_max*min([light_dependent_change_in_C_1, nutrient_dependent_change_in_C_1, metal_dependent_change_in_C_1_min]) \
-                        + mic_ment_light_mult_lim*V_max*light_dependent_change_in_C_1*nutrient_dependent_change_in_C_1*float(np.prod(np.array(metal_dependent_change_in_C_1)))
-
-            # Exports governed by the Michaelis-Menton model, considering the Liebig and Multiplicative method of limit.
-    
-    def export_2(metal_2_list_tent, K_sat_M_list_tent, C_2_input = C_2):
-        """
-        Calculates export of organic matter from box 1, considering the Michaelis-Menten
-        approach and the liebig/multiplicative limit approach.
-        
-        Parameters:
-            None
-        Returns
-            Float, representing the total export of organic matter from box 1 according to current
-            concentration of light, nutrient, and metal.
-        """
-        global light_dependent_change_in_C_2
-        global nutrient_dependent_change_in_C_2
-        global metal_dependent_change_in_C_2
-        light_dependent_change_in_C_2 = (Ibox2/(K_sat_l + Ibox2))
-        nutrient_dependent_change_in_C_2 = ((C_2_input)/(K_sat_N + C_2_input))
-
-        # Initiate list of tuples with metal concentration and K_sat_M.
-        metal_constant_list = []
-        for metal_index in range(len(metal_2_list_tent)):
-            metal_constant_list.append((metal_2_list_tent[metal_index][1], K_sat_M_list_tent[metal_index][1]))
-      
-        # Create list of metal_dependent_changes and save it to global list.
-        metal_dependent_change_in_C_2 = \
-            [(M_2_input/(K_sat_M_s + M_2_input)) for (M_2_input, K_sat_M_s) in metal_constant_list]
-        
-        # Find minimum in list
-        metal_dependent_change_in_C_2_min = min(metal_dependent_change_in_C_2)
-
-        
-        return mic_ment_light_leibig*V_max*min([light_dependent_change_in_C_2, nutrient_dependent_change_in_C_2, metal_dependent_change_in_C_2_min]) \
-                        + mic_ment_light_mult_lim*V_max*light_dependent_change_in_C_2*nutrient_dependent_change_in_C_2*float(np.prod(np.array(metal_dependent_change_in_C_2)))
-
-            # Exports governed by the Michaelis-Menten model, considering both the Liebig and Multiplicative methods of limitation.    
-          
-    # Concentration of Nutrients --------------------------------------------------
-    def dC_1_over_dt(metal_1_list_temp, K_sat_M_list_temp, C_1_input = C_1, C_2_input = C_2, C_3_input = C_3):
-        """
-        Calculates change in concentration of C_1 per cubic meter, in units of 
-        moles of C_1 per cubic meter per unit time.
-        
-        The quanities needed are stored in the variables defined earlier. 
-        
-    
-        Returns
-        -------
-        Number quantity reflecting change of C_1 per unit time, governed by the flow
-        rates and the concentrations at the given times.
-    
-        """
-            
-        return (psi*(C_3_input - C_1_input) + k_31*(C_3_input - C_1_input) + k_21*(C_2_input - C_1_input))/vol_1 \
-                - export_1(metal_1_list_temp, K_sat_M_list_temp, C_1_input) 
-                        
-        # Line 1: General tracer equation, maintains equilibrium among all three boxes with flow rate considered.
-        # Line 2: Given fixed export rate lambda_1, considers the box's export rate dependent on nutrient concentration in given box.
-        # Line 3: Amount of matter exported according to the given export function.
-                
-                    
-    def dC_2_over_dt(metal_2_list_temp, K_sat_M_list_temp, C_1_input = C_1, C_2_input = C_2, C_3_input = C_3):
-        """
-        Calculates change in concentration of C_2 per cubic meter, in units of 
-        moles of C_2 per cubic meter per unit time.
-        
-        The quanities needed are stored in the variables defined earlier. 
-        
-    
-        Returns
-        -------
-        Number quantity reflecting change of C_2 per unit time, governed by the flow
-        rates and the concentrations at the given times.
-    
-        """
-        
-        return (psi*(C_1_input - C_2_input) + k_12*(C_1_input - C_2_input) + k_32*(C_3_input - C_2_input))/vol_2 \
-                - export_2(metal_2_list_temp, K_sat_M_list_temp, C_2_input)
-
-        # Line 1: General tracer equation, maintains equilibrium among all three boxes with flow rate considered.
-        # Line 2: Amount of matter exported according to the given export function.
-            
-    def dC_3_over_dt(metal_1_list_temp, metal_2_list_temp, K_sat_M_list_temp, \
-                     C_1_input = C_1, C_2_input = C_2, C_3_input = C_3):
-        """
-        Calculates change in concentration of C_3 per cubic meter, in units of 
-        moles of C_3 per cubic meter per unit time.
-        
-        The quanities needed are stored in the variables defined earlier. 
-        
-    
-        Returns
-        -------
-        Number quantity reflecting change of C_3 per unit time, governed by the flow
-        rates and the concentrations at the given times.
-    
-        """
-        
-        return (psi*(C_2_input - C_3_input) + k_23*(C_2_input - C_3_input) + k_13*(C_1_input - C_3_input))/vol_3 + \
-                + (export_1(metal_1_list_temp, K_sat_M_list_temp, C_1_input)*vol_1 + export_2(metal_2_list_temp, K_sat_M_list_temp, C_2_input)*vol_2)/vol_3
-                
-        # Line 1: General tracer equation, maintains equilibrium among all three boxes with flow rate considered.
-        # Line 2: Amount of matter exported according to the given export function.
-
-    # Concentration of metal (or any trace metal in fact) -----------------------------
-    
-    def dM_1_over_dt(metal_1_list_temp, K_sat_M_list_temp, \
-                     alpha_temp, M_in1_temp, k_scav_temp, beta_val_temp, R_M_temp, \
-                     M_1_input = M_1, M_2_input = M_2, M_3_input = M_3, \
-                     C_1_input = C_1, L_1_input = L_1):
-        """
-        Calculates change in concentration of M_1_input per cubic meter, in units of 
-        moles of M_1 per cubic meter per unit time.
-        
-        The quanities needed are stored in the variables defined earlier. 
-        
-    
-        Returns
-        -------
-        Number quantity reflecting change of M_1 per unit time, governed by the flow
-        rates and the concentrations at the given times.
-        """
-            
-        return (psi*(M_3_input - M_1_input) + k_31*(M_3_input - M_1_input) + k_21*(M_2_input - M_1_input))/vol_1 + \
-            alpha_temp*M_in1_temp/dz_1 - k_scav_temp*complexation(M_1_input, L_1_input, beta_val_temp)/(60*60*24*365) - R_M_temp*export_1(metal_1_list_temp, K_sat_M_list_temp, C_1_input)
-            
-                # Line 1: General tracer equation, maintains equilibrium among all three boxes with flow rate considered.
-                # Line 2: First term represents source, second term represents sink (in terms of being scavenged)
-                    # Third term represents amount being used up ('biological utilization' as in Parekh, 2004)
-
-    def dM_2_over_dt(metal_2_list_temp, K_sat_M_list_temp, \
-                     alpha_temp, M_in2_temp, k_scav_temp, beta_val_temp, R_M_temp, \
-                     M_1_input = M_1, M_2_input = M_2, M_3_input = M_3, \
-                     C_2_input = C_2, L_2_input = L_2):
-        """
-        Calculates change in concentration of M_2 per cubic meter, in units of 
-        moles of M_2 per cubic meter per unit time.
-        
-        The quanities needed are stored in the variables defined earlier. 
-        
-    
-        Returns
-        -------
-        Number quantity reflecting change of M_2 per unit time, governed by the flow
-        rates and the concentrations at the given times.
-        """
-            
-        return (psi*(M_1_input - M_2_input) + k_12*(M_1_input - M_2_input) + k_32*(M_3_input - M_2_input))/vol_2 + \
-           alpha_temp*M_in2_temp/dz_2 - k_scav_temp*complexation(M_2_input, L_2_input, beta_val_temp)/(60*60*24*365) - R_M_temp*export_2(metal_2_list_temp, K_sat_M_list_temp, C_2_input)
-        
-    def dM_3_over_dt(metal_1_list_temp, metal_2_list_temp, K_sat_M_list_temp, \
-                     alpha_temp, k_scav_temp, beta_val_temp, R_M_temp, \
-                     M_1_input = M_1, M_2_input = M_2, M_3_input = M_3, \
-                     C_1_input = C_1, C_2_input = C_2, \
-                     L_1_input = L_1, L_2_input = L_2, L_3_input = L_3):
-        """
-        Calculates change in concentration of M_3 per cubic meter, in units of 
-        moles of M_3 per cubic meter per unit time.
-        
-        The quanities needed are stored in the variables defined earlier. 
-        
-    
-        Returns
-        -------
-        Number quantity reflecting change of M_2 per unit time, governed by the flow
-        rates and the concentrations at the given times.
-        """
-
-        return (psi*(M_2_input - M_3_input) + k_23*(M_2_input - M_3_input) + k_13*(M_1_input - M_3_input))/vol_3 \
-             - k_scav_temp*complexation(M_3_input, L_3_input, beta_val_temp)/(60*60*24*365) \
-                + R_M_temp*(export_1(metal_1_list_temp, K_sat_M_list_temp, C_1_input)*vol_1 + export_2(metal_2_list_temp, K_sat_M_list_temp, C_2_input)*vol_2)/vol_3
-
-    ### To find the free ion concentration at any given moment, the following function
-    ### calculates exactly that given our concentration of ligand, metal, and beta constant.
-    ### (via complexation)
-    
-    # Concentration of Ligands -----------------------------------------------------
-    
-    def dLt_1_over_dt(gamma_temp, lambda_ligand_temp, \
-                      metal_1_list_temp, K_sat_M_list_temp, \
-                      L_1_input = L_1, L_2_input = L_2, L_3_input = L_3, \
-                      C_1_input = C_1, M_1_input = M_1):
-        """
-        Calculates change in total ligand in specified box in units of mols per cubic meter.
-        Addresses ligands cycling through the three boxes, as well as sources/sinks.
-        Parameters
-        ----------
-            None.
-        Returns
-        -------
-        Value in units of mols per cubic meter per second (changing concentration of ligand)
-        """
-        return (psi*(L_3_input - L_1_input) + k_31*(L_3_input - L_1_input) + k_21*(L_2_input - L_1_input))/vol_1 \
-            + gamma_temp*export_1(metal_1_list_temp, K_sat_M_list_temp, C_1_input) \
-                - lambda_ligand_temp*L_1_input
-
-                    # Line 1: Cycling of ligands in and out of box 1.
-                    # Line 2: Source (with appropriate gamma)
-                    # Line 3: Loss of ligands to degredation.
-                
-    def dLt_2_over_dt(gamma_temp, lambda_ligand_temp, \
-                      metal_2_list_temp, K_sat_M_list_temp, \
-                      L_1_input = L_1, L_2_input = L_2, L_3_input = L_3, \
-                      C_2_input = C_2, M_2_input = M_2):
-        """
-        Calculates change in total ligand in specified box in units of mols per cubic meter.
-        Addresses ligands cycling through the three boxes, as well as sources/sinks.
-        Parameters
-        ----------
-            None.
-        Returns
-        -------
-        Value in units of mols per cubic meter per second (changing concentration of ligand)
-        """        
-        return (psi*(L_1_input - L_2_input) + k_12*(L_1_input - L_2_input) + k_32*(L_3_input - L_2_input))/vol_2 \
-            + gamma_temp*export_2(metal_2_list_temp, K_sat_M_list_temp, C_2_input) \
-                - lambda_ligand_temp*L_2_input
-                
-                    # Line 1: Cycling of ligands in and out of box 2.
-                    # Line 2: Source (with appropriate gamma)
-                    # Line 3: Loss of ligands to degredation.
-                    
-    def dLt_3_over_dt(gamma_temp, lambda_ligand_temp, \
-                      metal_1_list_temp, metal_2_list_temp, K_sat_M_list_temp, \
-                      L_1_input = L_1, L_2_input = L_2, L_3_input = L_3, \
-                      C_1_input = C_1, C_2_input = C_2, \
-                      M_1_input = M_1, M_2_input = M_2):
-        """
-        Calculates change in total ligand in specified box in units of mols per cubic meter.
-        Addresses ligands cycling through the three boxes, as well as sources/sinks.
-        Parameters
-        ----------
-            None.
-        Returns
-        -------
-        Value in units of mols per cubic meter per second (changing concentration of ligand)
-        """        
-        return (psi*(L_2_input - L_3_input) + k_23*(L_2_input - L_3_input) + k_13*(L_1_input - L_3_input))/vol_3 \
-            - lambda_ligand_temp/100*L_3_input \
-                + gamma_temp/vol_3*(export_1(metal_1_list_temp, K_sat_M_list_temp, C_1_input)*vol_1 + export_2(metal_2_list_temp, K_sat_M_list_temp, C_2_input)*vol_2)
-            
-            # Line 1: Cycling of ligands
-            # Line 2: Loss of ligand
-            # Line 3: Input of ligands based on export 'reception'
-        
-    # Complexation, causes differentiation between total and free metal (or any other metal) ------------------------
-    
-    def complexation(metal_tot, ligand_tot, beta):
-        """
-        Given a total metal concentration, ligand concentration, and beta value, this
-        function will return the total concentration of free metal that is not bound to
-        ligands (i.e. is free and prone to scavanging).
-        Parameters
-        ----------
-        metal_tot : float 
-            current total concentration of metal, value in mol per cubic meter 
-        ligand_tot : float
-            current total concentration of ligand, value in mol per cubic meter
-        beta : float
-            constant value, defines equilibrium position between free metal + ligand
-            and the complexed form. Value in kg/mol
-        Returns
-        -------
-        Float, current concentration of free metal.
-        """
-        term_1 = (metal_tot - 1/beta - ligand_tot)/2
-        term_2 = ((beta*(ligand_tot - metal_tot + 1/beta)**2 + 4*metal_tot)/(4*beta))**(1/2)
-    
-        return term_1 + term_2
-    
-    # ...................................................................................
         
     ### Create arrays where the first array depicts the x-axis (time steps) and the three other
     ### arrays depict concentrations of C_1, C_2, and C_3 over the time steps. 
@@ -553,45 +694,104 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
     time_axis_array = np.array(time_axis_list)
     time_axis_array_log10 = np.array(time_axis_list_log10)
     
-    ## Create y-axis arrays (C_1, C_2, and C_3)
+    ## Create y-axis concentrations
+    
+    # Initiate pandas dataframe with time_axis_array
+    conc_pd = pd.DataFrame(data = time_axis_array, \
+                 columns = ["Time"]).set_index("Time")
+
+    # Expandable list of biogeochemistry tracers
+    all_symbols = [('placeholder1', "C"), ('placeholder2', "L")]
+    all_symbols.extend(metal_symbol_list)
+        # Creating list with all necessary symbols
+    
+    conc_list = [element_symbol[1] for element_symbol in all_symbols]
     
     
-    C_1_list = [C_1,]
-    C_2_list = [C_2,]
-    C_3_list = [C_3,]
+    # Box number labels
+    nbox = list(map(str, np.arange(1,4)))
+    
+    # Create labels for each tracer in each box
+    conc_vars = list(map('_'.join, itertools.product(conc_list, nbox)))
+    
+    print(conc_vars)
+    
+    # Create DataFrame with initial concentrations for all variables. 
+    
+    # First combine lists of all concentrations, with intent to convert to dictionary of
+    # initial concentrations.
+    
+    all_concs = [('C_1', C_1), ('C_2', C_2), ('C_3', C_3), \
+                 ('L_1', L_1), ('L_2', L_2), ('L_3', L_3)]
+        
+    # Iterate over all three lists so that the first element of the tuple is renamed
+    # to the metal symbol, followed by element concentration. 
+    
+    metal_conc_symbol_tot = []
+    metal_1_conc_symbol = []
+    metal_2_conc_symbol = []
+    for val_index in range(len(metal_symbol_list)):
+        metal_conc_symbol_tot.append((f'{metal_symbol_list[val_index][1]}_1', metal_1_list[val_index][1]))
+        metal_conc_symbol_tot.append((f'{metal_symbol_list[val_index][1]}_2', metal_2_list[val_index][1]))
+        metal_conc_symbol_tot.append((f'{metal_symbol_list[val_index][1]}_3', metal_3_list[val_index][1]))
+        metal_1_conc_symbol.append((f'{metal_symbol_list[val_index][1]}_1', metal_1_list[val_index][1]))
+        metal_2_conc_symbol.append((f'{metal_symbol_list[val_index][1]}_2', metal_2_list[val_index][1]))
+    
+    all_concs.extend(metal_conc_symbol_tot)
+    
+    init_concs = dict(all_concs)
+    
+    print(init_concs)
+    
+    raise NotImplementedError
+    
+    # Finally add these initial values to the start of the dataframe
+    
+    for var in conc_vars:
+        conc_pd.loc[0, var] = init_concs[var]
+
+    
+    
+    print(conc_pd)
+    
+    raise NotImplementedError
+    # init_concs_frame = pd.DataFrame()
+
         # Initiate lists that will store the three concentrations, with initial concentrations already
         # in the lists.
     
     # Initialize lists that will store values of all metal and ligand concentrations, as well as temporary variables 
     # for the nutrient concentrations. 
     
-    metal_1_concentrations = []
-    metal_2_concentrations = []
-    metal_3_concentrations = []
-    ligand_1_concentrations = []
-    ligand_2_concentrations = []
-    ligand_3_concentrations = []
     
-    for init_conc_index in range(len(metal_symbol_list)):
-        metal_1_concentrations.append([metal_1_list[init_conc_index][1],])
-        metal_2_concentrations.append([metal_2_list[init_conc_index][1],])
-        metal_3_concentrations.append([metal_3_list[init_conc_index][1],])        
-        ligand_1_concentrations.append([L_1_init_list[init_conc_index][1],])
-        ligand_2_concentrations.append([L_2_init_list[init_conc_index][1],])
-        ligand_3_concentrations.append([L_3_init_list[init_conc_index][1],])      
-        
     
-    C_1_temp, C_2_temp, C_3_temp = C_1, C_2, C_3        
+    
+    
+    # C_1_list = [C_1,]
+    # C_2_list = [C_2,]
+    # C_3_list = [C_3,]
+    
+                            # metal_1_concentrations = []
+                            # metal_2_concentrations = []
+                            # metal_3_concentrations = []
+                            # ligand_1_concentrations = []
+                            # ligand_2_concentrations = []
+                            # ligand_3_concentrations = []
+                            
+                            # for init_conc_index in range(len(metal_symbol_list)):
+                            #     metal_1_concentrations.append([metal_1_list[init_conc_index][1],])
+                            #     metal_2_concentrations.append([metal_2_list[init_conc_index][1],])
+                            #     metal_3_concentrations.append([metal_3_list[init_conc_index][1],])        
+                            #     ligand_1_concentrations.append([L_1_init_list[init_conc_index][1],])
+                            #     ligand_2_concentrations.append([L_2_init_list[init_conc_index][1],])
+                            #     ligand_3_concentrations.append([L_3_init_list[init_conc_index][1],])      
+    
+    # C_1_temp, C_2_temp, C_3_temp = C_1, C_2, C_3        
 
     # Finally initiate iteration(s).
     
     for t_val in time_axis_array[1:]:
-            # print(metal_1_list)
-            # print(metal_2_list)
-            # print(metal_3_list)
-            # print(L_1_init_list)
-            # print(L_2_init_list)
-            # print(L_3_init_list)
+
             C_1_temp += dC_1_over_dt(metal_1_list, K_sat_M_list, C_1, C_2, C_3)*dt
             C_1_list.append(C_1_temp)
                 # Use Euler Step Function to change value of C_1 by one time step (i.e. dt). Then 
