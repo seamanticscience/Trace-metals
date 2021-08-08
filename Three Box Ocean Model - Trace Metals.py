@@ -704,9 +704,11 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
     
     ## Create y-axis concentrations
     
-    # Initiate pandas dataframe with time_axis_array
-    conc_pd = pd.DataFrame(data = time_axis_array, \
-                 columns = ["Time"]).set_index("Time")
+    
+    
+    # # Initiate pandas dataframe with time_axis_array
+    # conc_pd = pd.DataFrame(data = time_axis_array_indexed, \
+    #              columns = ["Time"]).set_index("Time")
 
     # Expandable list of biogeochemistry tracers
     all_symbols = [('placeholder1', "C"), ('placeholder2', "L")]
@@ -753,6 +755,8 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
         conc_pd.loc[0, var] = init_concs[var]
 
     # Iterate over time axis array.
+    
+    # raise NotImplementedError
     
     for t_val in range(len(time_axis_array))[1:]:
         conc_pd.loc[t_val] = dtotal_dt\
