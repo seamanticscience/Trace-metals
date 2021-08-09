@@ -145,7 +145,9 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
         approach and the liebig/multiplicative limit approach.
         
         Parameters:
-            None
+            metal_1_dict_tent: dictionary, with current concentrations of metals in box 1.
+            K_sat_M_list_tent: list of half saturation constants.
+            C_1_input: Initial concentration of C_1
         Returns
             Float, representing the total export of organic matter from box 1 according to current
             concentration of light, nutrient, and metal.
@@ -156,10 +158,14 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
         light_dependent_change_in_C_1 = (Ibox1/(K_sat_l + Ibox1))
         nutrient_dependent_change_in_C_1 = ((C_1_input)/(K_sat_N + C_1_input))
         
-        # Convert Passed In Dictionary to List
+        # Convert Passed In Dictionary to List, where the list consists of tuples matching
+        # Concentration Symbols of Metal to Metal Concentrations. 
         metal_1_list_tent = [element for element in metal_1_dict_tent.items()]
+        metal_1_list_tent.sort()
+            # Sort list so that the k_sat value positions align with this sorted list. 
         
-        # Initiate list of tuples with metal concentration and K_sat_M.
+        # Initiate list of tuples with metal concentration and K_sat_M. Takes symbols from 
+        # the list from before and matches them with saturation constant.
         metal_constant_list = []
         for metal_index in range(len(metal_1_list_tent)):
             metal_constant_list.append((metal_1_list_tent[metal_index][1], K_sat_M_list_tent[metal_index][1]))
@@ -182,9 +188,11 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
         approach and the liebig/multiplicative limit approach.
         
         Parameters:
-            None
+            metal_2_dict_tent: dictionary, with current concentrations of metals in box 2.
+            K_sat_M_list_tent: list of half saturation constants.
+            C_2_input: Initial concentration of C_2
         Returns
-            Float, representing the total export of organic matter from box 1 according to current
+            Float, representing the total export of organic matter from box 2 according to current
             concentration of light, nutrient, and metal.
         """
         global light_dependent_change_in_C_2
@@ -196,6 +204,7 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
         # Convert passed-in dict to list
         
         metal_2_list_tent = [element for element in metal_2_dict_tent.items()]
+        metal_2_list_tent.sort()
 
         # Initiate list of tuples with metal concentration and K_sat_M.
         metal_constant_list = []
@@ -227,7 +236,17 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
                   beta_val_dict_temp, dt_temp):
         """
         Takes all initial concentrations and returns all updated values dependent on said
-            initial values.
+            initial values, using governing differential equations. 
+        Parameters
+        ----------
+            C_1_input, C_2_input, C_3_input: Current nutrient concentrations in respective boxes.
+            L_1_input, L_2_input, L_3_input: Current ligand concentrations in respective boxes. 
+            conc_name_list_temp: List of all element symbols (e.g. ['C', 'L', 'Fe', ...])
+            gamma_temp: gamma value, currently a fixed value but is subject to change. 
+            lambda_ligand_temp: lambda ligand value, currently fixed to that of iron but subject to change. 
+            metal_1_dict_temp, metal_2_dict_temp, metal_3_dict_temp: dictionaries storing current concentrations of the metals in the three boxes. 
+            K_Sat_M_list_temp, ..., beta_val_dict_temp: Pre-established lists and dictionaries with appropriate values to compute the differential equations. 
+            dt_temp: Time step. 
 
         Returns
         -------
@@ -269,10 +288,15 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
                 + gamma_temp/vol_3*(export_1(metal_1_dict_temp, K_sat_M_list_temp, C_1_input)*vol_1 + export_2(metal_2_dict_temp, K_sat_M_list_temp, C_2_input)*vol_2)))
         
         return_list = [dC1dt, dC2dt, dC3dt, dL1dt, dL2dt, dL3dt]
+            
+            # Because, at least for the moment, the above concentrations of nutrients and ligands are singular values (and are not associated with newly-added metals), 
+            # we can just compute them once and add them to a return-list. 
         
         m_1_temp = []
         m_2_temp = []
         m_3_temp = []
+            # Initiate temporary lists which will store new metal concentrations designated as either the metal in box 1, box 2, or box 3.
+            # The sole purpose of these three lists is to help update the passed-in metal dictionaries.
         
         for metal_conc in conc_name_list_temp:
             temp_tuple_1 = (f'{metal_conc}_1', dM1dt(metal_1_dict_temp[f'{metal_conc}_1'], metal_2_dict_temp[f'{metal_conc}_2'], metal_3_dict_temp[f'{metal_conc}_3'], \
@@ -292,8 +316,11 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
                                                              R_M_dict_temp[metal_conc], beta_val_dict_temp[metal_conc]))
             return_list.append(temp_tuple_3)
             m_3_temp.append(temp_tuple_3)
+
+                # Temp tuples store the new metal concentrations corresponding to the metal names, then that tuple is appended to the return list as well as the 
+                # respective metal lists. 
                 
-        # Now that we have our return_list, update the dictionaries from which we got the concentration values to be used in the next iteration(s).
+        # Now that we have our return_list, update the dictionaries from which we got the concentration values to be used in the next iteration(s) for the three passed-in metal dictionaries.
         
         for conc_index in range(len(m_1_temp)):
             metal_1_dict_temp[m_1_temp[conc_index][0]] = m_1_temp[conc_index][1]
@@ -331,21 +358,21 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
     
     ## Initiate Lists With Additional *args passed in, as well as initial concentrations.
     
-    metal_symbol_list = [('symb_M', metal_type), ]
-    metal_1_list = [('m_conc_M_1', M_1), ]
-    metal_2_list = [('m_conc_M_2', M_2), ]
-    metal_3_list = [('m_conc_M_3', M_3), ]
-    metal_in_1_list = [('in1_M', M_in1), ]
-    metal_in_2_list = [('in2_M', M_in2), ]
-    alpha_list = [('alpha_M', alpha), ]
-    k_scav_list = [('k_scav_M', k_scav), ]
-    beta_val_list = [('beta_val_M', beta_val), ]
-    R_M_list = [('R_M_M', R_M), ]
-    K_sat_M_list = [('K_sat_M', K_sat_M), ]
-    ligand_use_list = [('ligand_use_M', ligand_use), ]
-    use_ligand_cycling_list = [('use_ligand_cycling_M', use_ligand_cycling), ]
-    gamma_list = [('gamma_M', gamma), ]
-    lambda_ligand_list = [('lambda_ligand_M', lambda_ligand), ]
+    metal_symbol_list = [('symb_Fe', metal_type), ]
+    metal_1_list = [('m_conc_Fe_1', M_1), ]
+    metal_2_list = [('m_conc_Fe_2', M_2), ]
+    metal_3_list = [('m_conc_Fe_3', M_3), ]
+    metal_in_1_list = [('in1_Fe', M_in1), ]
+    metal_in_2_list = [('in2_Fe', M_in2), ]
+    alpha_list = [('alpha_Fe', alpha), ]
+    k_scav_list = [('k_scav_Fe', k_scav), ]
+    beta_val_list = [('beta_val_Fe', beta_val), ]
+    R_M_list = [('R_M_Fe', R_M), ]
+    K_sat_M_list = [('K_sat_Fe', K_sat_M), ]
+    ligand_use_list = [('ligand_use_Fe', ligand_use), ]
+    use_ligand_cycling_list = [('use_ligand_cycling_Fe', use_ligand_cycling), ]
+    gamma_list = [('gamma_Fe', gamma), ]
+    lambda_ligand_list = [('lambda_ligand_Fe', lambda_ligand), ]
     # L_1_init_list = [('L_1_M', L_1), ]
     # L_2_init_list = [('L_2_M', L_2), ]
     # L_3_init_list = [('L_3_M', L_3), ]
@@ -418,32 +445,45 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
     
     all_concs = [('C_1', C_1), ('C_2', C_2), ('C_3', C_3), \
              ('L_1', L_1), ('L_2', L_2), ('L_3', L_3)]
+        # Initiate preliminary list where the initial nutrient and ligand concentrations are stored as
+        # tuples. This format helps to easily convert this into a dictionary. 
+
+
         
-    # Iterate over all three lists so that the first element of the tuple is renamed
-    # to the metal symbol, followed by element concentration. 
+    # Iterate over all three metal lists such that the first element of the tuple is renamed
+    # to the metal symbol, while the second element is a numerical element concentration. 
     
     metal_conc_symbol_tot = []
     metal_1_conc_symbol = []
     metal_2_conc_symbol = []
     metal_3_conc_symbol = []
     for val_index in range(len(metal_symbol_list)):
+        # metal_symbol_list was used to calculate range just out of convenience; any of the other lists could have been chosen. 
         metal_conc_symbol_tot.append((f'{metal_symbol_list[val_index][1]}_1', metal_1_list[val_index][1]))
         metal_conc_symbol_tot.append((f'{metal_symbol_list[val_index][1]}_2', metal_2_list[val_index][1]))
         metal_conc_symbol_tot.append((f'{metal_symbol_list[val_index][1]}_3', metal_3_list[val_index][1]))
         metal_1_conc_symbol.append((f'{metal_symbol_list[val_index][1]}_1', metal_1_list[val_index][1]))
         metal_2_conc_symbol.append((f'{metal_symbol_list[val_index][1]}_2', metal_2_list[val_index][1]))
         metal_3_conc_symbol.append((f'{metal_symbol_list[val_index][1]}_3', metal_3_list[val_index][1]))
+            # Note that all the lists used here (specifically metal_1, metal_2, and metal_3 lists) are sorted, so numerical indices
+            # can be used to sort them. 
     
     all_concs.extend(metal_conc_symbol_tot)
+        # Extend our previously_defined list of concentrations of nutrients + ligands with our concentrations of metals. 
     
     init_concs = dict(all_concs)
     init_concs_metal_1 = dict(metal_1_conc_symbol)
     init_concs_metal_2 = dict(metal_2_conc_symbol)
     init_concs_metal_3 = dict(metal_3_conc_symbol)
+        # Convert all tupled lists from above into dictionaries. This is a pivotal step because now our info can be accessed by the names of the elements/ metals, 
+        # thereby avoiding any potential worries with misindexing. 
 
-    ## Converting the rest of the important lists into dictionaries with same keys.
+
+    ## Converting the rest of the important lists into dictionaries with keys corresponding to elemental symbols/ nutrients/ ligands.
     
     metal_name_list = [element_symbol[1] for element_symbol in metal_symbol_list]
+        # metal_symbol_list is stored as tuples where the first element is the name of the passed_in_variable
+        # and the second element is the symbol itself; just take the second element. 
     
     metal_in1_dict = {}
     metal_in2_dict = {}
@@ -451,6 +491,8 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
     k_scav_dict = {}
     beta_val_dict = {}
     R_M_dict = {}
+        # Initiate dictionaries where we will add keys associated with element, and value associated with the 
+        # respective dictionaries. 
     
     for var_index in range(len(metal_name_list)):
         metal_in1_dict[metal_name_list[var_index]] = metal_in_1_list[var_index][1]
@@ -501,10 +543,12 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
     # Expandable list of biogeochemistry tracers
     all_symbols = [('placeholder1', "C"), ('placeholder2', "L")]
     all_symbols.extend(metal_symbol_list)
-        # Creating list with all necessary symbols
+        # metal_symbol_list consists of metals that were passed in in tuple form; simply extend
+        # this list of "C" and "L" with that list.
     
     all_symbols_list = [element_symbol[1] for element_symbol in all_symbols]
-
+        # Now we have a list of all symbols/ items circulating through the boxes. We can use this
+        # to iterate through the concentrations as necessary. 
     
     # Initiate dictionary where the key is the element, but the value is a mutable list storing
     # concentration values for each time step. 
@@ -513,6 +557,7 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
     conc_tracing_dict = {}
     for element_name in init_concs.keys():
         conc_tracing_dict[element_name] = [init_concs[element_name],]
+            # The above for-loop initiates this sort of dictionary with mutable lists as the value. 
 
     for t_val in time_axis_array[1:]:
         temp_dict = dtotal_dt(conc_tracing_dict['C_1'][-1], conc_tracing_dict['C_2'][-1], conc_tracing_dict['C_3'][-1], \
@@ -524,6 +569,9 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
                   beta_val_dict, dt)
         for element_name in init_concs.keys():
             conc_tracing_dict[element_name].append(temp_dict[element_name])
+                # for each key in our init_concs (the same keys present in our conc_tracing_dict),
+                # find the value associated with that key (which is a singular list), and to that list append
+                # the new concentration value given by the temp_dict with that very same key.
 
         
     def plot_concentrations(title, metal_symbol_list_temp, time_axis_array_temp, conc_dict_temp):
@@ -534,9 +582,11 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
         Parameters:
         -----------
             title: an str object titling the graph
-            time_array: array of ints representing the time scale of the graph.
-            array_of_C_1: array of numbers detailing levels of C_1 over time.
-            array_of_C_2 and array_of_C_3: as detailed above.
+            metal_symbol_list_temp: List of all symbols involved (e.g. ['C', 'L', 'Fe', ...])
+            time_axis_array_temp: array of ints representing the time scale of the graph.
+            conc_dict_temp: dictionary where the keys are concentrations of the elements in each of the boxes
+                (e.g. C_1, Fe_2, etc.), and the values are lists of concentration values spaced out by the time step.
+                In a sense, these lists will be the "y values" for each x value in the time axis array. 
         
         Returns:
         -------
@@ -549,18 +599,18 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
             '''
             Parameters
             ----------
-            ml_name : TYPE
-                DESCRIPTION.
-            ml_concentrations_1 : TYPE
-                DESCRIPTION.
-            ml_concentrations_2 : TYPE
-                DESCRIPTION.
-            ml_concentrations_3 : TYPE
-                DESCRIPTION.
+            ml_name : str
+                Metal name, symbol with which to characterize graphed element. 
+            ml_concentrations_1 : list/ numpy array
+                Concentrations to be plotted for first box.
+            ml_concentrations_2 : list/ numpy array
+                Concentrations to be plotted for second box.
+            ml_concentrations_3 : list / numpy array
+                Concentrations to be plotted for third box.
 
             Returns
             -------
-            None.
+            None; plots figure. 
 
             '''
             
@@ -568,16 +618,21 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
             plt.title(f'{title} \n {ml_name}: Concentrations Over Time (in mol/m3) \n')
             plt.xlabel('Time [log(years)]')
             plt.ylabel(f'Concentration of {ml_name} (in mol/m3)')
+                # Initiate labels of graph
+                
             plt.plot(time_axis_array_tempo, ml_concentrations_1, 'r', label = f'{ml_name}_1')
             plt.plot(time_axis_array_tempo, ml_concentrations_2, 'g', label = f'{ml_name}_2')
             plt.plot(time_axis_array_tempo, ml_concentrations_3, 'b', label = f'{ml_name}_3')
+                # Plot the three curves/ sets of data.
 
             plt.legend(loc = 'best')
             plt.show()
             plt.close()
+                # Make sure to close so that a separate graph can be plotted. 
             
             
-        # Plot Concentrations, but first group the concentrations.
+        # Plot Concentrations Using Element Symbols in metal_symbol_list_temp.
+        
         for element_symbol in metal_symbol_list_temp:
             plot_sub_conc(element_symbol, time_axis_array_temp, \
                           conc_dict_temp[f'{element_symbol}_1'], \
