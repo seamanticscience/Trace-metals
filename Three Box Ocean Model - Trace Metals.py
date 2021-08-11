@@ -300,16 +300,17 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
             # Because, at least for the moment, the above concentrations of nutrients are singular values (and are not associated with newly-added metals), 
             # we can just compute them once and add them to a return-list. 
         
-        # if not use_multiple_ligands:
-        #     dL1dt = ('L_1_Fe', L_1_input_dict['L_1_Fe'] + dt_temp*((psi*(L_3_input_dict['L_3_Fe'] - L_1_input_dict['L_1_Fe']) + k_31*(L_3_input_dict['L_3_Fe'] - L_1_input_dict['L_1_Fe']) + k_21*(L_2_input_dict['L_2_Fe'] - L_1_input_dict['L_1_Fe']))/vol_1 \
-        #              + gamma_temp_dict['Fe']*export_1(metal_1_dict_temp, K_sat_M_list_temp, C_1_input) \
-        #             - lambda_ligand_temp_dict['Fe']*L_1_input_dict['L_1_Fe']))
-        #     dL2dt = ('L_2_Fe', L_2_input_dict['L_2_Fe'] + dt_temp*((psi*(L_1_input_dict['L_1_Fe'] - L_2_input_dict['L_2_Fe']) + k_12*(L_1_input_dict['L_1_Fe'] - L_2_input_dict['L_2_Fe']) + k_32*(L_3_input_dict['L_3_Fe'] - L_2_input_dict['L_2_Fe']))/vol_2 \
-        #              + gamma_temp_dict['Fe']*export_2(metal_2_dict_temp, K_sat_M_list_temp, C_2_input) \
-        #             - lambda_ligand_temp_dict['Fe']*L_2_input_dict['L_2_Fe']))
-        #     dL3dt = ('L_3_Fe', L_3_input_dict['L_3_Fe'] + dt_temp*((psi*(L_2_input_dict['L_2_Fe'] - L_3_input_dict['L_3_Fe']) + k_23*(L_2_input_dict['L_2_Fe'] - L_3_input_dict['L_3_Fe']) + k_13*(L_1_input_dict['L_1_Fe'] - L_3_input_dict['L_3_Fe']))/vol_3 \
-        #              - lambda_ligand_temp_dict['Fe']/100*L_3_input_dict['L_3_Fe'] \
-        #             + gamma_temp_dict['Fe']/vol_3*(export_1(metal_1_dict_temp, K_sat_M_list_temp, C_1_input)*vol_1 + export_2(metal_2_dict_temp, K_sat_M_list_temp, C_2_input)*vol_2)))
+        if not use_multiple_ligands:
+            dL1dt = ('L_1_Fe', L_1_input_dict['L_1_Fe'] + dt_temp*((psi*(L_3_input_dict['L_3_Fe'] - L_1_input_dict['L_1_Fe']) + k_31*(L_3_input_dict['L_3_Fe'] - L_1_input_dict['L_1_Fe']) + k_21*(L_2_input_dict['L_2_Fe'] - L_1_input_dict['L_1_Fe']))/vol_1 \
+                      + gamma_temp_dict['Fe']*export_1(metal_1_dict_temp, K_sat_M_list_temp, C_1_input) \
+                    - lambda_ligand_temp_dict['Fe']*L_1_input_dict['L_1_Fe']))
+            dL2dt = ('L_2_Fe', L_2_input_dict['L_2_Fe'] + dt_temp*((psi*(L_1_input_dict['L_1_Fe'] - L_2_input_dict['L_2_Fe']) + k_12*(L_1_input_dict['L_1_Fe'] - L_2_input_dict['L_2_Fe']) + k_32*(L_3_input_dict['L_3_Fe'] - L_2_input_dict['L_2_Fe']))/vol_2 \
+                      + gamma_temp_dict['Fe']*export_2(metal_2_dict_temp, K_sat_M_list_temp, C_2_input) \
+                    - lambda_ligand_temp_dict['Fe']*L_2_input_dict['L_2_Fe']))
+            dL3dt = ('L_3_Fe', L_3_input_dict['L_3_Fe'] + dt_temp*((psi*(L_2_input_dict['L_2_Fe'] - L_3_input_dict['L_3_Fe']) + k_23*(L_2_input_dict['L_2_Fe'] - L_3_input_dict['L_3_Fe']) + k_13*(L_1_input_dict['L_1_Fe'] - L_3_input_dict['L_3_Fe']))/vol_3 \
+                      - lambda_ligand_temp_dict['Fe']/100*L_3_input_dict['L_3_Fe'] \
+                    + gamma_temp_dict['Fe']/vol_3*(export_1(metal_1_dict_temp, K_sat_M_list_temp, C_1_input)*vol_1 + export_2(metal_2_dict_temp, K_sat_M_list_temp, C_2_input)*vol_2)))
+            return_list.extend([dL1dt, dL2dt, dL3dt])
         
         m_1_temp = []
         m_2_temp = []
@@ -324,41 +325,69 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
             # The sole purpose of these three lists is to help update the passed-in metal dictionaries.
         
         for metal_conc in conc_name_list_temp:
-            temp_tuple_1 = (f'{metal_conc}_1', dM1dt(metal_1_dict_temp[f'{metal_conc}_1'], metal_2_dict_temp[f'{metal_conc}_2'], metal_3_dict_temp[f'{metal_conc}_3'], \
-                                                         alpha_dict_temp[metal_conc], M_in1_dict_temp[metal_conc], k_scav_dict_temp[metal_conc], \
-                                                             R_M_dict_temp[metal_conc], beta_val_dict_temp[metal_conc]))
-            return_list.append(temp_tuple_1)
-            m_1_temp.append(temp_tuple_1)
-            
-            temp_tuple_2 = (f'{metal_conc}_2', dM2dt(metal_1_dict_temp[f'{metal_conc}_1'], metal_2_dict_temp[f'{metal_conc}_2'], metal_3_dict_temp[f'{metal_conc}_3'], \
-                                                         alpha_dict_temp[metal_conc], M_in2_dict_temp[metal_conc], k_scav_dict_temp[metal_conc], \
-                                                             R_M_dict_temp[metal_conc], beta_val_dict_temp[metal_conc]))
-            return_list.append(temp_tuple_2)
-            m_2_temp.append(temp_tuple_2)
-            
-            temp_tuple_3 = (f'{metal_conc}_3', dM3dt(metal_1_dict_temp[f'{metal_conc}_1'], metal_2_dict_temp[f'{metal_conc}_2'], metal_3_dict_temp[f'{metal_conc}_3'], \
-                                                         alpha_dict_temp[metal_conc], k_scav_dict_temp[metal_conc], \
-                                                             R_M_dict_temp[metal_conc], beta_val_dict_temp[metal_conc]))
-            return_list.append(temp_tuple_3)
-            m_3_temp.append(temp_tuple_3)
-                # Temp tuples store the new metal concentrations corresponding to the metal names, then that tuple is appended to the return list as well as the 
-                # respective metal lists. 
+            if not use_multiple_ligands:
+                temp_tuple_1 = (f'{metal_conc}_1', dM1dt(metal_1_dict_temp[f'{metal_conc}_1'], metal_2_dict_temp[f'{metal_conc}_2'], metal_3_dict_temp[f'{metal_conc}_3'], \
+                                                         L_1_input_dict['L_1_Fe'], L_2_input_dict['L_2_Fe'], L_3_input_dict['L_3_Fe'], \
+                                                             alpha_dict_temp[metal_conc], M_in1_dict_temp[metal_conc], k_scav_dict_temp[metal_conc], \
+                                                                 R_M_dict_temp[metal_conc], beta_val_dict_temp[metal_conc]))
+                return_list.append(temp_tuple_1)
+                m_1_temp.append(temp_tuple_1)
                 
+                temp_tuple_2 = (f'{metal_conc}_2', dM2dt(metal_1_dict_temp[f'{metal_conc}_1'], metal_2_dict_temp[f'{metal_conc}_2'], metal_3_dict_temp[f'{metal_conc}_3'], \
+                                                         L_1_input_dict['L_1_Fe'], L_2_input_dict['L_2_Fe'], L_3_input_dict['L_3_Fe'], \
+                                                             alpha_dict_temp[metal_conc], M_in2_dict_temp[metal_conc], k_scav_dict_temp[metal_conc], \
+                                                                 R_M_dict_temp[metal_conc], beta_val_dict_temp[metal_conc]))
+                return_list.append(temp_tuple_2)
+                m_2_temp.append(temp_tuple_2)
                 
-            temp_tuple_L_1 = ('L_1_{metal_conc}', dL1dt(L_1_input_dict[f'L_1_{metal_conc}'], L_2_input_dict[f'L_2_{metal_conc}'], L_3_input_dict[f'L_3_{metal_conc}'], \
-                                                        gamma_temp_dict[metal_conc], lambda_ligand_temp_dict[metal_conc]))
-            return_list.append(temp_tuple_L_1)
-            L_1_temp.append(temp_tuple_L_1)
-            
-            temp_tuple_L_2 = ('L_2_{metal_conc}', dL2dt(L_1_input_dict[f'L_1_{metal_conc}'], L_2_input_dict[f'L_2_{metal_conc}'], L_3_input_dict[f'L_3_{metal_conc}'], \
-                                                        gamma_temp_dict[metal_conc], lambda_ligand_temp_dict[metal_conc]))
-            return_list.append(temp_tuple_L_2)
-            L_2_temp.append(temp_tuple_L_2)
-            
-            temp_tuple_L_3 = ('L_3_{metal_conc}', dL3dt(L_1_input_dict[f'L_1_{metal_conc}'], L_2_input_dict[f'L_2_{metal_conc}'], L_3_input_dict[f'L_3_{metal_conc}'], \
-                                                        gamma_temp_dict[metal_conc], lambda_ligand_temp_dict[metal_conc]))
-            return_list.append(temp_tuple_L_3)
-            L_3_temp.append(temp_tuple_L_3)
+                temp_tuple_3 = (f'{metal_conc}_3', dM3dt(metal_1_dict_temp[f'{metal_conc}_1'], metal_2_dict_temp[f'{metal_conc}_2'], metal_3_dict_temp[f'{metal_conc}_3'], \
+                                                         L_1_input_dict['L_1_Fe'], L_2_input_dict['L_2_Fe'], L_3_input_dict['L_3_Fe'], \
+                                                             alpha_dict_temp[metal_conc], k_scav_dict_temp[metal_conc], \
+                                                                 R_M_dict_temp[metal_conc], beta_val_dict_temp[metal_conc]))
+                return_list.append(temp_tuple_3)
+                m_3_temp.append(temp_tuple_3)
+                    # Temp tuples store the new metal concentrations corresponding to the metal names, then that tuple is appended to the return list as well as the 
+                    # respective metal lists. 
+                
+            if use_multiple_ligands:   
+                temp_tuple_1 = (f'{metal_conc}_1', dM1dt(metal_1_dict_temp[f'{metal_conc}_1'], metal_2_dict_temp[f'{metal_conc}_2'], metal_3_dict_temp[f'{metal_conc}_3'], \
+                                                         L_1_input_dict[f'L_1_{metal_conc}'], L_2_input_dict[f'L_2_{metal_conc}'], L_3_input_dict[f'L_3_Fe{metal_conc}'], \
+                                                             alpha_dict_temp[metal_conc], M_in1_dict_temp[metal_conc], k_scav_dict_temp[metal_conc], \
+                                                                 R_M_dict_temp[metal_conc], beta_val_dict_temp[metal_conc]))
+                return_list.append(temp_tuple_1)
+                m_1_temp.append(temp_tuple_1)
+                
+                temp_tuple_2 = (f'{metal_conc}_2', dM2dt(metal_1_dict_temp[f'{metal_conc}_1'], metal_2_dict_temp[f'{metal_conc}_2'], metal_3_dict_temp[f'{metal_conc}_3'], \
+                                                         L_1_input_dict[f'L_1_{metal_conc}'], L_2_input_dict[f'L_2_{metal_conc}'], L_3_input_dict[f'L_3_Fe{metal_conc}'], \
+                                                             alpha_dict_temp[metal_conc], M_in2_dict_temp[metal_conc], k_scav_dict_temp[metal_conc], \
+                                                                 R_M_dict_temp[metal_conc], beta_val_dict_temp[metal_conc]))
+                return_list.append(temp_tuple_2)
+                m_2_temp.append(temp_tuple_2)
+                
+                temp_tuple_3 = (f'{metal_conc}_3', dM3dt(metal_1_dict_temp[f'{metal_conc}_1'], metal_2_dict_temp[f'{metal_conc}_2'], metal_3_dict_temp[f'{metal_conc}_3'], \
+                                                         L_1_input_dict[f'L_1_{metal_conc}'], L_2_input_dict[f'L_2_{metal_conc}'], L_3_input_dict[f'L_3_Fe{metal_conc}'], \
+                                                             alpha_dict_temp[metal_conc], k_scav_dict_temp[metal_conc], \
+                                                                 R_M_dict_temp[metal_conc], beta_val_dict_temp[metal_conc]))
+                return_list.append(temp_tuple_3)
+                m_3_temp.append(temp_tuple_3)
+                    # Temp tuples store the new metal concentrations corresponding to the metal names, then that tuple is appended to the return list as well as the 
+                    # respective metal lists. 
+
+                
+                temp_tuple_L_1 = ('L_1_{metal_conc}', dL1dt(L_1_input_dict[f'L_1_{metal_conc}'], L_2_input_dict[f'L_2_{metal_conc}'], L_3_input_dict[f'L_3_{metal_conc}'], \
+                                                            gamma_temp_dict[metal_conc], lambda_ligand_temp_dict[metal_conc]))
+                return_list.append(temp_tuple_L_1)
+                L_1_temp.append(temp_tuple_L_1)
+                
+                temp_tuple_L_2 = ('L_2_{metal_conc}', dL2dt(L_1_input_dict[f'L_1_{metal_conc}'], L_2_input_dict[f'L_2_{metal_conc}'], L_3_input_dict[f'L_3_{metal_conc}'], \
+                                                            gamma_temp_dict[metal_conc], lambda_ligand_temp_dict[metal_conc]))
+                return_list.append(temp_tuple_L_2)
+                L_2_temp.append(temp_tuple_L_2)
+                
+                temp_tuple_L_3 = ('L_3_{metal_conc}', dL3dt(L_1_input_dict[f'L_1_{metal_conc}'], L_2_input_dict[f'L_2_{metal_conc}'], L_3_input_dict[f'L_3_{metal_conc}'], \
+                                                            gamma_temp_dict[metal_conc], lambda_ligand_temp_dict[metal_conc]))
+                return_list.append(temp_tuple_L_3)
+                L_3_temp.append(temp_tuple_L_3)
             
         # Now that we have our return_list, update the dictionaries from which we got the concentration values to be used in the next iteration(s) for the three passed-in metal dictionaries.
         
@@ -493,8 +522,7 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
     
     # Metal Concentrations
     
-    all_concs = [('C_1', C_1), ('C_2', C_2), ('C_3', C_3), \
-             ('L_1', L_1), ('L_2', L_2), ('L_3', L_3)]
+    all_concs = [('C_1', C_1), ('C_2', C_2), ('C_3', C_3)]
         # Initiate preliminary list where the initial nutrient and ligand concentrations are stored as
         # tuples. This format helps to easily convert this into a dictionary. 
         
@@ -508,30 +536,38 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
     metal_1_conc_symbol = []
     metal_2_conc_symbol = []
     metal_3_conc_symbol = []
+
     ligand_1_conc_symbol = []
     ligand_2_conc_symbol = []
     ligand_3_conc_symbol = []
-    
-    print(metal_symbol_list)
-    print(L_1_init_list)
     
     for val_index in range(len(metal_symbol_list)):
         # metal_symbol_list was used to calculate range just out of convenience; any of the other lists could have been chosen. 
         metal_conc_symbol_tot.append((f'{metal_symbol_list[val_index][1]}_1', metal_1_list[val_index][1]))
         metal_conc_symbol_tot.append((f'{metal_symbol_list[val_index][1]}_2', metal_2_list[val_index][1]))
         metal_conc_symbol_tot.append((f'{metal_symbol_list[val_index][1]}_3', metal_3_list[val_index][1]))
-        metal_conc_symbol_tot.append((f'L_1_{metal_symbol_list[val_index][1]}', L_1_init_list[val_index][1]))
-        metal_conc_symbol_tot.append((f'L_2_{metal_symbol_list[val_index][1]}', L_2_init_list[val_index][1]))
-        metal_conc_symbol_tot.append((f'L_3_{metal_symbol_list[val_index][1]}', L_3_init_list[val_index][1]))
+        if use_multiple_ligands:
+            metal_conc_symbol_tot.append((f'L_1_{metal_symbol_list[val_index][1]}', L_1_init_list[val_index][1]))
+            metal_conc_symbol_tot.append((f'L_2_{metal_symbol_list[val_index][1]}', L_2_init_list[val_index][1]))
+            metal_conc_symbol_tot.append((f'L_3_{metal_symbol_list[val_index][1]}', L_3_init_list[val_index][1]))
             # Above six are appended to main concentration symbol list.
         metal_1_conc_symbol.append((f'{metal_symbol_list[val_index][1]}_1', metal_1_list[val_index][1]))
         metal_2_conc_symbol.append((f'{metal_symbol_list[val_index][1]}_2', metal_2_list[val_index][1]))
         metal_3_conc_symbol.append((f'{metal_symbol_list[val_index][1]}_3', metal_3_list[val_index][1]))
-        ligand_1_conc_symbol.append((f'L_1_{metal_symbol_list[val_index][1]}', L_1_init_list[val_index][1]))
-        ligand_2_conc_symbol.append((f'L_2_{metal_symbol_list[val_index][1]}', L_2_init_list[val_index][1]))
-        ligand_3_conc_symbol.append((f'L_3_{metal_symbol_list[val_index][1]}', L_3_init_list[val_index][1]))
+        if use_multiple_ligands:
+            ligand_1_conc_symbol.append((f'L_1_{metal_symbol_list[val_index][1]}', L_1_init_list[val_index][1]))
+            ligand_2_conc_symbol.append((f'L_2_{metal_symbol_list[val_index][1]}', L_2_init_list[val_index][1]))
+            ligand_3_conc_symbol.append((f'L_3_{metal_symbol_list[val_index][1]}', L_3_init_list[val_index][1]))
             # Note that all the lists used here (specifically metal_1, metal_2, and metal_3 lists) are sorted, so numerical indices
             # can be used to sort them. 
+            
+    if not use_multiple_ligands:
+            metal_conc_symbol_tot.append(('L_1_Fe', L_1_init_list[0][1]))
+            metal_conc_symbol_tot.append(('L_2_Fe', L_2_init_list[0][1]))
+            metal_conc_symbol_tot.append(('L_3_Fe', L_3_init_list[0][1]))
+            ligand_1_conc_symbol.append(('L_1_Fe', L_1_init_list[0][1]))
+            ligand_2_conc_symbol.append(('L_2_Fe', L_2_init_list[0][1]))
+            ligand_3_conc_symbol.append(('L_3_Fe', L_3_init_list[0][1]))
     
     all_concs.extend(metal_conc_symbol_tot)
         # Extend our previously_defined list of concentrations of nutrients + ligands with our concentrations of metals. 
@@ -540,9 +576,22 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
     init_concs_metal_1 = dict(metal_1_conc_symbol)
     init_concs_metal_2 = dict(metal_2_conc_symbol)
     init_concs_metal_3 = dict(metal_3_conc_symbol)
+
     init_concs_ligand_1 = dict(ligand_1_conc_symbol)
     init_concs_ligand_2 = dict(ligand_2_conc_symbol)
     init_concs_ligand_3 = dict(ligand_3_conc_symbol)
+    
+    print(init_concs)
+    print(init_concs_ligand_1)
+    print(init_concs_ligand_2)
+    print(init_concs_ligand_3)
+    
+    raise NotImplementedError
+    
+    # print(init_concs_ligand_1)
+    # print(init_concs_ligand_2)
+    # print(init_concs_ligand_3)
+    
         # Convert all tupled lists from above into dictionaries. This is a pivotal step because now our info can be accessed by the names of the elements/ metals, 
         # thereby avoiding any potential worries with misindexing. 
 
@@ -613,9 +662,13 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
     # Initiate symbols of all things to be traced.
         
     # Expandable list of biogeochemistry tracers
-    all_symbols = [('placeholder1', "C")]
+    if use_multiple_ligands:
+        all_symbols = [('placeholder1', "C")]
+    else:
+        all_symbols = [('placeholder1', "C"), ('placeholder2', 'L')]
     all_symbols.extend(metal_symbol_list)
-    all_symbols.extend(L_symbol_list)
+    if use_multiple_ligands:
+        all_symbols.extend(L_symbol_list)
         # metal_symbol_list consists of metals that were passed in in tuple form; simply extend
         # this list of "C" and "L" with that list.
         
@@ -640,6 +693,8 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
                   init_concs_metal_1, init_concs_metal_2, init_concs_metal_3, \
                   K_sat_M_list, alpha_dict, metal_in1_dict, metal_in2_dict, k_scav_dict, R_M_dict, \
                   beta_val_dict, dt)
+        # print(init_concs)
+        # print(temp_dict)
         for element_name in init_concs.keys():
             conc_tracing_dict[element_name].append(temp_dict[element_name])
                 # for each key in our init_concs (the same keys present in our conc_tracing_dict),
