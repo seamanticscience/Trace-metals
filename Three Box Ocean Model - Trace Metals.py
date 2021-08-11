@@ -484,6 +484,12 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
     L_1_init_list.sort()
     L_2_init_list.sort()
     L_3_init_list.sort()
+    
+    # print(L_1_init_list)
+    # print(L_2_init_list)
+    # print(L_3_init_list)
+    
+    # raise NotImplementedError
 
     ## After collecting the above information into appropriate lists, convert them into dictionaries where
     ## the key is in format 'element + box label' to make the next functions readable and accessible via key rather than order. 
@@ -533,6 +539,12 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
     init_L_1_dict = dict(L_1_init_list)
     init_L_2_dict = dict(L_2_init_list)
     init_L_3_dict = dict(L_3_init_list)
+
+    # print(init_concs)
+    # print(init_L_1_dict)
+    # print(init_L_2_dict)
+    # print(init_L_3_dict)
+    # raise NotImplementedError
 
     ## Converting the rest of the important lists into dictionaries with keys corresponding to elemental symbols/ nutrients/ ligands.
     
@@ -610,7 +622,8 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
         # Now we have a list of all symbols/ items circulating through the boxes. We can use this
         # to iterate through the concentrations as necessary. 
     
-
+    # print(all_symbols_list)
+    # raise NotImplementedError
     
     # Initiate dictionary where the key is the element, but the value is a mutable list storing
     # concentration values for each time step. 
@@ -628,6 +641,10 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
                   init_concs_metal_1, init_concs_metal_2, init_concs_metal_3, \
                   K_sat_M_list, alpha_dict, metal_in1_dict, metal_in2_dict, k_scav_dict, R_M_dict, \
                   beta_val_dict, dt)
+            
+        # print(temp_dict)
+        # print(conc_tracing_dict)
+        # raise NotImplementedError
         
         for element_name in init_concs.keys():
             conc_tracing_dict[element_name].append(temp_dict[element_name])
@@ -691,6 +708,13 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
             
             
         # Plot Concentrations Using Element Symbols in metal_symbol_list_temp.
+
+        # First create a metal_only list where we only have metal concentrations; will be helpful
+        # when trying to find keys in the dictionary linked to metal concentrations. 
+        
+        metal_only_list = metal_symbol_list_temp.copy()
+        metal_only_list.remove('C')
+        metal_only_list.remove('L')
         
         proc_counter = 0
         
@@ -713,10 +737,11 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
                     else:
                         pass
                 else:
-                    plot_sub_conc(element_symbol, time_axis_array_temp, \
-                              conc_dict_temp[f'L_1_{element_symbol}'], \
-                                  conc_dict_temp[f'L_2_{element_symbol}'], \
-                                      conc_dict_temp[f'L_3_{element_symbol}'])
+                    for metal_symbol in metal_only_list:
+                        plot_sub_conc(f'{element_symbol}_{metal_symbol}', time_axis_array_temp, \
+                                  conc_dict_temp[f'L_1_{metal_symbol}'], \
+                                      conc_dict_temp[f'L_2_{metal_symbol}'], \
+                                          conc_dict_temp[f'L_3_{metal_symbol}'])
         
     plot_concentrations(title, all_symbols_list, time_axis_array_log10, conc_tracing_dict)
         # Plotting the concentrations and how they change over time. 
@@ -817,8 +842,9 @@ transport_model_graphing_ligand_approach = \
                                             L_1 = 0, L_2 = 0, L_3 = 0, \
                                                 mic_ment_light_leibig = 1, \
                                                     k_scav = 0.19, ligand_total_val = ligand_conc, beta_val = beta_val_1, \
-                                                        symb_Cu = 'Cu(II)', m_conc_Cu_II_1 = 0, m_conc_Cu_II_2 = 0, m_conc_Cu_II_3 = 0, \
+                                                        symb_Cu = 'Cu_II', m_conc_Cu_II_1 = 0, m_conc_Cu_II_2 = 0, m_conc_Cu_II_3 = 0, \
                                                             in1_Cu_II = F_in1, in2_Cu_II = F_in2, alpha_Cu_II = alpha_Cu_II_val, k_scav_Cu_II = 0.19, \
                                                                 beta_val_Cu_II = beta_val_Cu_II_val, R_M_Cu_II = R_Cu_II, K_sat_Cu_II = K_sat_Cu_II_val, \
                                                                     ligand_use_Cu_II = True, use_ligand_cycling_Cu_II = True, \
-                                                                        gamma_Cu_II = gamma_Cu_II_val, lambda_ligand_Cu_II = lambda_ligand_Cu_II_val)
+                                                                        gamma_Cu_II = gamma_Cu_II_val, lambda_ligand_Cu_II = lambda_ligand_Cu_II_val, \
+                                                                            L_1_Cu_II = 0, L_2_Cu_II = 0, L_3_Cu_II = 0)
