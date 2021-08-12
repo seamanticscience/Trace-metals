@@ -80,7 +80,7 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
                                        gamma = gamma_Fe, lambda_ligand = lambda_ligand_Fe, \
                                            L_1 = None, L_2 = None, L_3 = None, \
                            mic_ment_light_leibig = 0, mic_ment_light_mult_lim = 0, \
-                               k_scav = 0, ligand_total_val = 0, beta_val = 0, copper_toxicity = False, \
+                               k_scav = 0, ligand_total_val = 0, beta_val = 0, copper_toxicity = False, copper_inhibition_threshold = None, \
                                    **other_metal_parameters):
     """
     Uses first order ODEs to characterize the time dependence of the concentration(s)
@@ -117,6 +117,8 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
         ligand_total_val: float, initially set to 0 because by default we do not have any ligands in the model.
         beta_val: float, initially set to 0 because we have no equilibrium between the metal and ligand concentrations.
         copper_toxicity: boolean, incorporates copper toxicity into model if set to true. 
+        copper_inhibition_threshold: threshold of free ion concentration past which copper ions are toxic, i.e. export from the
+            boxes are set to 0.
         *other_metal_parameters: If we want to include other metals in this model alongside M_1 to M_3, we input them here. 
             The order in which the parameters will be accepted are:
                 metal_symbol, metal_1, metal_2, metal_3, metal_in_1, metal_in_2, alpha_metal, k_scav, beta_val R_M_metal, 
@@ -167,6 +169,9 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
         if copper_toxicity:
             former_copper_conc = metal_1_dict_tent['Cu_II_1']
             metal_1_dict_tent['Cu_II_1'] = complexation(former_copper_conc, L_1_input_dict_tempo['L_1_Cu_II'], beta_val_dict_tempo['Cu_II'])
+            if metal_1_dict_tent['Cu_II_1'] > copper_inhibition_threshold:
+                metal_1_dict_tent['Cu_II_1'] = 0
+                    # If concentration goes above toxic threshold, set value to 0 to abruptly cut off export.
         
         # Convert Passed In Dictionary to List, where the list consists of tuples matching
         # Concentration Symbols of Metal to Metal Concentrations. 
@@ -223,7 +228,9 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
         if copper_toxicity:
             former_copper_conc = metal_2_dict_tent['Cu_II_2']
             metal_2_dict_tent['Cu_II_2'] = complexation(former_copper_conc, L_2_input_dict_tempo['L_2_Cu_II'], beta_val_dict_tempo['Cu_II'])
-
+            if metal_2_dict_tent['Cu_II_2'] > copper_inhibition_threshold:
+                metal_2_dict_tent['Cu_II_2'] = 0
+                    # If concentration goes above toxic threshold, set value to 0 to abruptly cut off export.
         # Convert passed-in dict to list
         
         metal_2_list_tent = [element for element in metal_2_dict_tent.items()]
@@ -903,7 +910,7 @@ transport_model_graphing_ligand_approach = \
                                         ligand_use = True, use_ligand_cycling = True, \
                                             L_1 = 0, L_2 = 0, L_3 = 0, \
                                                 mic_ment_light_leibig = 1, \
-                                                    k_scav = 0.19, ligand_total_val = ligand_conc, beta_val = beta_val_1, copper_toxicity = True, \
+                                                    k_scav = 0.19, ligand_total_val = ligand_conc, beta_val = beta_val_1, copper_toxicity = True, copper_inhibition_threshold = 10**-7.7, \
                                                         symb_Cu = 'Cu_II', m_conc_Cu_II_1 = 0, m_conc_Cu_II_2 = 0, m_conc_Cu_II_3 = 0, \
                                                             in1_Cu_II = F_in1, in2_Cu_II = F_in2, alpha_Cu_II = alpha_Cu_II_val, k_scav_Cu_II = 0.19, \
                                                                 beta_val_Cu_II = beta_val_Cu_II_val, R_M_Cu_II = R_Cu_II, K_sat_Cu_II = K_sat_Cu_II_val, \
