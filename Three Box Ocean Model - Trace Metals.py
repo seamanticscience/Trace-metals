@@ -835,7 +835,7 @@ R_Cu_II = R_Fe*(0.38/7.5) # Using elemental ratio.
 K_sat_Cu_II = K_sat_Fe*(0.38/7.5) # Using elemental ratios to convert between iron and copper. 
 
 ligand_conc = 2*10**-9 # mol/m3
-beta_val_Cu_II = math.exp(8.5)
+beta_val_Cu_II = 10**(8.5)
 
 # transport_model_graphing_ligand_approach = \
 #         create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, 0.006849, 10000, \
@@ -862,7 +862,7 @@ R_Cu_II = R_Fe*(0.38/7.5) # Using elemental ratio.
 K_sat_Cu_II_val = K_sat_Fe*(0.38/7.5) # Using elemental ratios to convert between iron and copper. 
 
 ligand_conc = 60*10**-9 # mol/m3
-beta_val_Cu_II_val = math.exp(8.5)
+beta_val_Cu_II_val = 10**(8.5)
 #2
 gamma_Cu_II_val = 5*10**(-5)*(106/16)*(0.38/7.5) # Units of mol L/(mol N), converted using Redfield Ratio.
 lambda_ligand_Cu_II_val = 5*10**(-5)/4398*(0.38/7.5)
@@ -902,9 +902,11 @@ lambda_ligand_Cu_II_val = 5*10**(-5)/4398*(0.38/7.5)
             
 # Copper II Concentrations over time, but tracking different ligands for different metals and considering copper toxicity.
 
+beta_val_Cu_II_val = 10**(0)
+
 transport_model_graphing_ligand_approach = \
         create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, 0.006849, 10000, \
-                            'Nutrients, Iron, Copper(II) and Ligands over time, Multi-Ligands \n dt = 2.5 days, ligand concentration = 2*10**-9, beta = e**8.5 (kg per mol) \n Michalis-Menten Model, Leibig Limit Approximation', 9, \
+                            'Nutrients, Iron, Copper(II) and Ligands over time, Multi-Ligands \n dt = 2.5 days, ligand concentration = 2*10**-9, beta = 10**0 (kg per mol) \n Michalis-Menten Model, Leibig Limit Approximation', 9, \
                                 use_metal = True, metal_type = 'Fe', M_1 = 0, M_2 = 0, M_3 = 0, K_sat_M = K_sat_Fe, \
                                     M_in1 = F_in1, M_in2 = F_in2, alpha = alpha_Fe, R_M = R_Fe, \
                                         ligand_use = True, use_ligand_cycling = True, \
