@@ -787,39 +787,55 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
 ### The following section calls the above functions for plotting purposes.
 
 # -------------------------------------------------------------------
-# Plotting Iron with results similar to Lauderdale 2020
+## Plotting Iron with results similar to Lauderdale 2020
+
+# Establishing Deposition Rates
+
+D_in1 = (1/0.035)*0.071/(60*60*24*365) # Now it's just rate of deposition of "dust" in g/m2/s
+D_in2 = (1/0.035)*6.46/(60*60*24*365) # Same as above
+
+# D_in1 = 0.071/(60*60*24*365) # Now it's just rate of deposition of "dust" in g/m2/s
+# D_in2 = 6.46/(60*60*24*365) # Same as above
+# -------------------------------------------------------------------
+# Establishing Quantities Specific to Model Scenario
 
 N_1_to_3 = 30*rho_0*10**(-6)
 
-alpha_Fe = 0.01*0.035 #Fe dust solubility
-R_Fe = (2.5*10**-5)*6.625 #unitless, multiplied by 6.625 to convert this Fe:C ratio to Fe:N
+alpha_Fe = (0.035*0.01)/55.845 #Fe dust solubility
+# R_Fe = (2.5*10**-5)*6.625 #unitless, multiplied by 6.625 to convert this Fe:C ratio to Fe:N
+R_Fe = (7.5*10**-3)*(1/16) #unitless, multiplied by (1/16) to convert from Fe:P ratio to Fe:N from Ho and Quigg
 K_sat_Fe = 2*10**-7 #units of mole per cubic meter
 
 
 ligand_conc = 1*10**-6 # mol/m3
 beta_val_1 = 10**8 # kg/mol, as required by the value earlier.
-# Establishing F_in1.
-F_in1 = 0.071/(55.845*60*60*24*365)
-    # The quanitity is initially provided in grams M per year. To convert this
-    # quantity to mol M per second, divide by molar mass as well as the total number
-    # of seconds in a year.   
-# Establishing F_in2.
-F_in2 = 6.46/(55.845*60*60*24*365)
-    # The quanitity is initially provided in grams M per year. To convert this
-    # quantity to mol M per second, divide by molar mass as well as the total number
-    # of seconds in a year.
+
+# -----
+# The following iron depositions took into account molar iron deposition, which
+# was later corrected to account for dust deposition in terms of grams.
+
+# # Establishing F_in1.
+# F_in1 = 0.071/(55.845*60*60*24*365)
+#     # The quanitity is initially provided in grams M per year. To convert this
+#     # quantity to mol M per second, divide by molar mass as well as the total number
+#     # of seconds in a year.   
+# # Establishing F_in2.
+# F_in2 = 6.46/(55.845*60*60*24*365)
+#     # The quanitity is initially provided in grams M per year. To convert this
+#     # quantity to mol M per second, divide by molar mass as well as the total number
+#     # of seconds in a year.
+# -----
 
 
-
-# transport_model_graphing_ligand_approach = \
-#         create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, 0.006849, 10000, \
-#                             'Concentrations of Nutrients, Iron, and Ligands over time, \n dt = 2.5 days, ligand concentration = 10**-6, beta = 10**8 (kg per mol) \n Michalis-Menten Model, Leibig Limit Approximation', 9, \
-#                                 use_metal = True, metal_type = 'Fe', M_1 = 0, M_2 = 0, M_3 = 0, K_sat_M = K_sat_Fe, \
-#                                     M_in1 = F_in1, M_in2 = F_in2, alpha = alpha_Fe, R_M = R_Fe, \
-#                                         ligand_use = True, use_ligand_cycling = True, \
-#                                             L_1 = 0, L_2 = 0, L_3 = 0, \
-#                                                 mic_ment_light_leibig = 1, \
-#                                                     k_scav = 0.19, ligand_total_val = ligand_conc, beta_val = beta_val_1)
+transport_model_graphing_ligand_approach = \
+        create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, 0.006849, 10000, \
+                            'Concentrations of Nutrients, Iron, and Ligands over time, \n dt = 2.5 days, ligand concentration = 10**-6, beta = 10**8 (kg per mol) \n Michalis-Menten Model, Leibig Limit Approximation', 9, \
+                                use_metal = True, metal_type = 'Fe', M_1 = 0, M_2 = 0, M_3 = 0, K_sat_M = K_sat_Fe, \
+                                    M_in1 = D_in1, M_in2 = D_in2, alpha = alpha_Fe, R_M = R_Fe, \
+                                        ligand_use = True, use_ligand_cycling = True, \
+                                            L_1 = 0, L_2 = 0, L_3 = 0, \
+                                                mic_ment_light_leibig = 1, \
+                                                    k_scav = 0.19, ligand_total_val = ligand_conc, beta_val = beta_val_1)
 
 # -------------------------------------------------------------------
 # Copper (II): Assume that the surface concentration (i.e. metal and ligands) in the first
@@ -830,8 +846,8 @@ F_in2 = 6.46/(55.845*60*60*24*365)
 N_1_to_3 = 30*rho_0*10**(-6)
 Cu_1_2 = (1*10**-9)*(1000) # Converting value from mol/liter to mol/m3
 
-alpha_Cu_II = alpha_Fe
-R_Cu_II = R_Fe*(0.38/7.5) # Using elemental ratio.
+alpha_Cu_II = (0.00035*0.5)/63.546
+R_Cu_II = (0.38*10**-3)*(1/16) #unitless, multiplied by (1/16) to convert from Fe:P ratio to Fe:N from Ho and Quigg
 K_sat_Cu_II = K_sat_Fe*(0.38/7.5) # Using elemental ratios to convert between iron and copper. 
 
 ligand_conc = 2*10**-9 # mol/m3
@@ -841,7 +857,7 @@ beta_val_Cu_II = 10**(8.5)
 #         create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, 0.006849, 10000, \
 #                             'Concentrations of Nutrients, Iron, and Ligands over time, \n dt = 2.5 days, ligand concentration = 2*10**-9, beta = e**8.5 (kg per mol) \n Michalis-Menten Model, Leibig Limit Approximation', 9, \
 #                                 use_metal = True, metal_type = 'Cu(II)', M_1 = Cu_1_2, M_2 = Cu_1_2, M_3 = 0, K_sat_M = K_sat_Cu_II, \
-#                                     M_in1 = F_in1, M_in2 = F_in2, alpha = alpha_Cu_II, R_M = R_Cu_II, \
+#                                     M_in1 = D_in1, M_in2 = D_in2, alpha = alpha_Cu_II, R_M = R_Cu_II, \
 #                                         ligand_use = True, use_ligand_cycling = True, \
 #                                             L_1 = ligand_conc, L_2 = ligand_conc, L_3 = 0, \
 #                                                 mic_ment_light_leibig = 1, \
@@ -857,8 +873,9 @@ beta_val_Cu_II = 10**(8.5)
 N_1_to_3 = 30*rho_0*10**(-6)
 Cu_1_2 = (10*10**-9)*(1000) # Converting value from mol/liter to mol/m3
 #1
-alpha_Cu_II_val = alpha_Fe
-R_Cu_II = R_Fe*(0.38/7.5) # Using elemental ratio.
+alpha_Cu_II_val = (0.00035*0.5)/63.546
+# R_Cu_II = R_Fe*(0.38/7.5) # Using elemental ratio.
+R_Cu_II = (0.38*10**-3)*(1/16) #unitless, multiplied by (1/16) to convert from Fe:P ratio to Fe:N from Ho and Quigg
 K_sat_Cu_II_val = K_sat_Fe*(0.38/7.5) # Using elemental ratios to convert between iron and copper. 
 
 ligand_conc = 60*10**-9 # mol/m3
@@ -871,13 +888,13 @@ lambda_ligand_Cu_II_val = 5*10**(-5)/4398*(0.38/7.5)
 #         create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, 0.006849, 10000, \
 #                             'Nutrients, Iron, Copper(II) and Ligands over time, Single Ligand, \n dt = 2.5 days, ligand concentration = 2*10**-9, beta = e**8.5 (kg per mol) \n Michalis-Menten Model, Leibig Limit Approximation', 9, \
 #                                 use_metal = True, metal_type = 'Fe', M_1 = 0, M_2 = 0, M_3 = 0, K_sat_M = K_sat_Fe, \
-#                                     M_in1 = F_in1, M_in2 = F_in2, alpha = alpha_Fe, R_M = R_Fe, \
+#                                     M_in1 = D_in1, M_in2 = D_in2, alpha = alpha_Fe, R_M = R_Fe, \
 #                                         ligand_use = True, use_ligand_cycling = True, \
 #                                             L_1 = 0, L_2 = 0, L_3 = 0, \
 #                                                 mic_ment_light_leibig = 1, \
 #                                                     k_scav = 0.19, ligand_total_val = ligand_conc, beta_val = beta_val_1, \
 #                                                         symb_Cu = 'Cu_II', m_conc_Cu_II_1 = 0, m_conc_Cu_II_2 = 0, m_conc_Cu_II_3 = 0, \
-#                                                             in1_Cu_II = F_in1, in2_Cu_II = F_in2, alpha_Cu_II = alpha_Cu_II_val, k_scav_Cu_II = 0.19, \
+#                                                             in1_Cu_II = D_in1, in2_Cu_II = D_in2, alpha_Cu_II = alpha_Cu_II_val, k_scav_Cu_II = 0.19, \
 #                                                                 beta_val_Cu_II = beta_val_Cu_II_val, R_M_Cu_II = R_Cu_II, K_sat_Cu_II = K_sat_Cu_II_val, \
 #                                                                     ligand_use_Cu_II = True, use_ligand_cycling_Cu_II = True, \
 #                                                                         gamma_Cu_II = gamma_Cu_II_val, lambda_ligand_Cu_II = lambda_ligand_Cu_II_val)
@@ -888,13 +905,13 @@ lambda_ligand_Cu_II_val = 5*10**(-5)/4398*(0.38/7.5)
 #         create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, 0.006849, 10000, \
 #                             'Nutrients, Iron, Copper(II) and Ligands over time, Multi-Ligands \n dt = 2.5 days, ligand concentration = 2*10**-9, beta = e**8.5 (kg per mol) \n Michalis-Menten Model, Leibig Limit Approximation', 9, \
 #                                 use_metal = True, metal_type = 'Fe', M_1 = 0, M_2 = 0, M_3 = 0, K_sat_M = K_sat_Fe, \
-#                                     M_in1 = F_in1, M_in2 = F_in2, alpha = alpha_Fe, R_M = R_Fe, \
+#                                     M_in1 = D_in1, M_in2 = D_in2, alpha = alpha_Fe, R_M = R_Fe, \
 #                                         ligand_use = True, use_ligand_cycling = True, \
 #                                             L_1 = 0, L_2 = 0, L_3 = 0, \
 #                                                 mic_ment_light_leibig = 1, \
 #                                                     k_scav = 0.19, ligand_total_val = ligand_conc, beta_val = beta_val_1, \
 #                                                         symb_Cu = 'Cu_II', m_conc_Cu_II_1 = 0, m_conc_Cu_II_2 = 0, m_conc_Cu_II_3 = 0, \
-#                                                             in1_Cu_II = F_in1, in2_Cu_II = F_in2, alpha_Cu_II = alpha_Cu_II_val, k_scav_Cu_II = 0.19, \
+#                                                             in1_Cu_II = D_in1, in2_Cu_II = D_in2, alpha_Cu_II = alpha_Cu_II_val, k_scav_Cu_II = 0.19, \
 #                                                                 beta_val_Cu_II = beta_val_Cu_II_val, R_M_Cu_II = R_Cu_II, K_sat_Cu_II = K_sat_Cu_II_val, \
 #                                                                     ligand_use_Cu_II = True, use_ligand_cycling_Cu_II = True, \
 #                                                                         gamma_Cu_II = gamma_Cu_II_val, lambda_ligand_Cu_II = lambda_ligand_Cu_II_val, \
@@ -902,20 +919,22 @@ lambda_ligand_Cu_II_val = 5*10**(-5)/4398*(0.38/7.5)
             
 # Copper II Concentrations over time, but tracking different ligands for different metals and considering copper toxicity.
 
-beta_val_Cu_II_val = 10**(0)
+beta_val_Cu_II_val = 10**(8.5)
 
 transport_model_graphing_ligand_approach = \
         create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, 0.006849, 10000, \
-                            'Nutrients, Iron, Copper(II) and Ligands over time, Multi-Ligands \n dt = 2.5 days, ligand concentration = 2*10**-9, beta = 10**0 (kg per mol) \n Michalis-Menten Model, Leibig Limit Approximation', 9, \
+                            'Nutrients, Iron, Copper(II) and Ligands over time, Multi-Ligands \n dt = 2.5 days, ligand concentration = 2*10**-9, beta = 10**8.5 (kg per mol) \n Michalis-Menten Model, Leibig Limit Approximation \n Toxic Copper Threshold: 10**-6.2', 9, \
                                 use_metal = True, metal_type = 'Fe', M_1 = 0, M_2 = 0, M_3 = 0, K_sat_M = K_sat_Fe, \
-                                    M_in1 = F_in1, M_in2 = F_in2, alpha = alpha_Fe, R_M = R_Fe, \
+                                    M_in1 = D_in1, M_in2 = D_in2, alpha = alpha_Fe, R_M = R_Fe, \
                                         ligand_use = True, use_ligand_cycling = True, \
                                             L_1 = 0, L_2 = 0, L_3 = 0, \
                                                 mic_ment_light_leibig = 1, \
-                                                    k_scav = 0.19, ligand_total_val = ligand_conc, beta_val = beta_val_1, copper_toxicity = True, copper_inhibition_threshold = 10**-7.7, \
+                                                    k_scav = 0.19, ligand_total_val = ligand_conc, beta_val = beta_val_1, copper_toxicity = True, copper_inhibition_threshold = 10**-6.2, \
                                                         symb_Cu = 'Cu_II', m_conc_Cu_II_1 = 0, m_conc_Cu_II_2 = 0, m_conc_Cu_II_3 = 0, \
-                                                            in1_Cu_II = F_in1, in2_Cu_II = F_in2, alpha_Cu_II = alpha_Cu_II_val, k_scav_Cu_II = 0.19, \
+                                                            in1_Cu_II = D_in1, in2_Cu_II = D_in2, alpha_Cu_II = alpha_Cu_II_val, k_scav_Cu_II = 0.19, \
                                                                 beta_val_Cu_II = beta_val_Cu_II_val, R_M_Cu_II = R_Cu_II, K_sat_Cu_II = K_sat_Cu_II_val, \
                                                                     ligand_use_Cu_II = True, use_ligand_cycling_Cu_II = True, \
                                                                         gamma_Cu_II = gamma_Cu_II_val, lambda_ligand_Cu_II = lambda_ligand_Cu_II_val, \
                                                                             L_1_Cu_II = 0, L_2_Cu_II = 0, L_3_Cu_II = 0)
+            
+    
