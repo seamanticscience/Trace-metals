@@ -12,12 +12,6 @@ import pandas as pd
 import itertools
 
 ### -----------------------------------------------------------------------------
-
-## Creating Class to Solve ODEs
-
-class solve_ode_timestep(object):
-    pass
-
 ## Establishing Global Quantities
 
 ## Establishing Dimensions of Three Boxes (all values have units of meters)
@@ -127,19 +121,15 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
             All of these parameters MUST be passed in to include a new metal. 
     Returns
     -------
-        Plots graph with this information (not returned)
+        Dictionary with concentration series for each item plotted (includes concentrations of nutrients, metals, and ligands).
+        Plots graph with this information as well.
     """
     ## Initially check to see if the michaelis-menton parameters passed in are either 0 or 1; any other
     ## value, and raise a value error.
-    
     ## Yet to be implemented.    
-    
-    ## Differential Functions
-    
-    # Cycling of Matter ---------------------------------------------
-    # TBD
 
     
+    ## Differential Functions    
     # Export Production --------------------------------------------------
     
     def export_1(metal_1_dict_tent, K_sat_M_list_tent, L_1_input_dict_tempo, beta_val_dict_tempo, C_1_input = C_1):
@@ -150,7 +140,10 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
         Parameters:
             metal_1_dict_tent: dictionary, with current concentrations of metals in box 1.
             K_sat_M_list_tent: list of half saturation constants.
-            C_1_input: Initial concentration of C_1
+            L_1_input_dict_tempo: dictionary of ligand concentrations in box 1, used to calculate complexation if we are given
+                that copper toxicity plays a role in the export production.
+            beta_val_dict_tempo: Same as above. 
+            C_1_input: Current concentration of C_1
         Returns
             Float, representing the total export of organic matter from box 1 according to current
             concentration of light, nutrient, and metal.
@@ -209,7 +202,10 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
         Parameters:
             metal_2_dict_tent: dictionary, with current concentrations of metals in box 2.
             K_sat_M_list_tent: list of half saturation constants.
-            C_2_input: Initial concentration of C_2
+            L_2_input_dict_tempo: dictionary of ligand concentrations in box 1, used to calculate complexation if we are given
+                that copper toxicity plays a role in the export production.
+            beta_val_dict_tempo: Same as above. 
+            C_2_input: Current concentration of C_2
         Returns
             Float, representing the total export of organic matter from box 2 according to current
             concentration of light, nutrient, and metal.
@@ -217,6 +213,8 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
         global light_dependent_change_in_C_2
         global nutrient_dependent_change_in_C_2
         global metal_dependent_change_in_C_2
+            # Establish global quality of variables such that they can be modified by
+            # by changes within this function. 
         light_dependent_change_in_C_2 = (Ibox2/(K_sat_l + Ibox2))
         nutrient_dependent_change_in_C_2 = ((C_2_input)/(K_sat_N + C_2_input))
         
@@ -276,8 +274,8 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
             C_1_input, C_2_input, C_3_input: Current nutrient concentrations in respective boxes.
             L_1_input, L_2_input, L_3_input: Current ligand concentrations in respective boxes. 
             conc_name_list_temp: List of all element symbols (e.g. ['C', 'L', 'Fe', ...])
-            gamma_temp: gamma value, currently a fixed value but is subject to change. 
-            lambda_ligand_temp: lambda ligand value, currently fixed to that of iron but subject to change. 
+            gamma_temp_dict: gamma value dictionary, all associated gamma values should there be multiple metals.
+            lambda_ligand_dict_temp: lambda ligand dictionary of values, corresponding to different metals.
             metal_1_dict_temp, metal_2_dict_temp, metal_3_dict_temp: dictionaries storing current concentrations of the metals in the three boxes. 
             K_Sat_M_list_temp, ..., beta_val_dict_temp: Pre-established lists and dictionaries with appropriate values to compute the differential equations. 
             dt_temp: Time step. 
@@ -286,6 +284,20 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
         Dictionary mapping element/metal to new concentration value.
         """
         def dM1dt(M_1_input, M_2_input, M_3_input, alpha_temp, M_in1_temp, k_scav_temp, R_M_temp, beta_val_temp, L_1_input):
+            """
+            Computes change in metal concentration after one time step. 
+
+            Parameters
+            ----------
+            M_1_input, M_2_input, M_3_input: Current value(s) of the metal concentrations, which can be any metal if there are multiple metals. 
+            alpha_temp, ..., beta_val_temp: Pre-established values obtained from prior dictionary. 
+            L_1_input : Current ligand value, also gotten from passed-in dictionary. 
+            
+            Returns
+            -------
+            Float, new value of metal concentration. 
+
+            """
             return M_1_input + dt_temp*((psi*(M_3_input - M_1_input) + k_31*(M_3_input - M_1_input) + k_21*(M_2_input - M_1_input))/vol_1 + \
                     alpha_temp*M_in1_temp/dz_1 - k_scav_temp*complexation(M_1_input, L_1_input, beta_val_temp)/(60*60*24*365) - R_M_temp*export_1(metal_1_dict_temp, K_sat_M_list_temp, L_1_input_dict, beta_val_dict_temp, C_1_input))
             
@@ -294,25 +306,99 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
                     # Third term represents amount being used up ('biological utilization' as in Parekh, 2004)
 
         def dM2dt(M_1_input, M_2_input, M_3_input, alpha_temp, M_in2_temp, k_scav_temp, R_M_temp, beta_val_temp, L_2_input):
+            """
+            Computes change in metal concentration after one time step. 
+
+            Parameters
+            ----------
+            M_1_input, M_2_input, M_3_input: Current value(s) of the metal concentrations, which can be any metal if there are multiple metals. 
+            alpha_temp, ..., beta_val_temp: Pre-established values obtained from prior dictionary. 
+            L_2_input : Current ligand value, also gotten from passed-in dictionary. 
+            
+            Returns
+            -------
+            Float, new value of metal concentration. 
+
+            """
             return M_2_input + dt_temp*((psi*(M_1_input - M_2_input) + k_12*(M_1_input - M_2_input) + k_32*(M_3_input - M_2_input))/vol_2 + \
                     alpha_temp*M_in2_temp/dz_2 - k_scav_temp*complexation(M_2_input, L_2_input, beta_val_temp)/(60*60*24*365) - R_M_temp*export_2(metal_2_dict_temp, K_sat_M_list_temp, L_2_input_dict, beta_val_dict_temp, C_2_input))
 
         def dM3dt(M_1_input, M_2_input, M_3_input, alpha_temp, k_scav_temp, R_M_temp, beta_val_temp, L_3_input):
+            """
+            Computes change in metal concentration after one time step. 
+
+            Parameters
+            ----------
+            M_1_input, M_2_input, M_3_input: Current value(s) of the metal concentrations, which can be any metal if there are multiple metals. 
+            alpha_temp, ..., beta_val_temp: Pre-established values obtained from prior dictionary. 
+            L_3_input : Current ligand value, also gotten from passed-in dictionary. 
+            
+            Returns
+            -------
+            Float, new value of metal concentration. 
+
+            """
             return M_3_input + dt_temp*((psi*(M_2_input - M_3_input) + k_23*(M_2_input - M_3_input) + k_13*(M_1_input - M_3_input))/vol_3 \
                 - k_scav_temp*complexation(M_3_input, L_3_input, beta_val_temp)/(60*60*24*365) \
                 + R_M_temp*(export_1(metal_1_dict_temp, K_sat_M_list_temp, L_1_input_dict, beta_val_dict_temp, C_1_input)*vol_1 + export_2(metal_2_dict_temp, K_sat_M_list_temp, L_2_input_dict, beta_val_dict_temp, C_2_input)*vol_2)/vol_3)
         
         def dL1dt(L_1_input, L_2_input, L_3_input, gamma_temp, lambda_ligand_temp):
+            """
+            Computes change in ligand concentration after one time step.
+
+            Parameters
+            ----------
+            L_1_input, L_2_input, L_3_input: Current ligand concentration values in respective boxes.
+            gamma_temp, lambda_ligand_temp: Values of gamma and lambda_ligand, associated with corresponding metals
+                depending on what is stored in dictionary. 
+
+            Returns
+            -------
+            Float, the current new concentration of the ligand.
+
+            """
             return L_1_input + dt_temp*((psi*(L_3_input - L_1_input) + k_31*(L_3_input - L_1_input) + k_21*(L_2_input - L_1_input))/vol_1 \
                  + gamma_temp*export_1(metal_1_dict_temp, K_sat_M_list_temp, L_1_input_dict, beta_val_dict_temp, C_1_input) \
                 - lambda_ligand_temp*L_1_input)
+                
+                # Line 1: General tracer equation.
+                # Line 2: Import of ligand into designated box, regulated by export production of said box.
+                # Line 3: Export of ligand, dependent on input of ligand scaled by lambda value. 
         
         def dL2dt(L_1_input, L_2_input, L_3_input, gamma_temp, lambda_ligand_temp):
+            """
+            Computes change in ligand concentration after one time step.
+
+            Parameters
+            ----------
+            L_1_input, L_2_input, L_3_input: Current ligand concentration values in respective boxes.
+            gamma_temp, lambda_ligand_temp: Values of gamma and lambda_ligand, associated with corresponding metals
+                depending on what is stored in dictionary. 
+
+            Returns
+            -------
+            Float, the current new concentration of the ligand.
+
+            """
             return L_2_input + dt_temp*((psi*(L_1_input - L_2_input) + k_12*(L_1_input - L_2_input) + k_32*(L_3_input - L_2_input))/vol_2 \
                  + gamma_temp*export_2(metal_2_dict_temp, K_sat_M_list_temp, L_2_input_dict, beta_val_dict_temp, C_2_input) \
                 - lambda_ligand_temp*L_2_input)
         
         def dL3dt(L_1_input, L_2_input, L_3_input, gamma_temp, lambda_ligand_temp):
+            """
+            Computes change in ligand concentration after one time step.
+
+            Parameters
+            ----------
+            L_1_input, L_2_input, L_3_input: Current ligand concentration values in respective boxes.
+            gamma_temp, lambda_ligand_temp: Values of gamma and lambda_ligand, associated with corresponding metals
+                depending on what is stored in dictionary. 
+
+            Returns
+            -------
+            Float, the current new concentration of the ligand.
+
+            """
             return L_3_input + dt_temp*((psi*(L_2_input - L_3_input) + k_23*(L_2_input - L_3_input) + k_13*(L_1_input - L_3_input))/vol_3 \
                  - lambda_ligand_temp/100*L_3_input \
                 + gamma_temp/vol_3*(export_1(metal_1_dict_temp, K_sat_M_list_temp, L_1_input_dict, beta_val_dict_temp, C_1_input)*vol_1 + export_2(metal_2_dict_temp, K_sat_M_list_temp, L_2_input_dict, beta_val_dict_temp, C_2_input)*vol_2))
@@ -325,6 +411,9 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
         dC3dt = ('C_3', C_3_input + dt_temp*((psi*(C_2_input - C_3_input) + k_23*(C_2_input - C_3_input) + k_13*(C_1_input - C_3_input))/vol_3 + \
                 + (export_1(metal_1_dict_temp, K_sat_M_list_temp, L_1_input_dict, beta_val_dict_temp, C_1_input)*vol_1 + export_2(metal_2_dict_temp, K_sat_M_list_temp, L_2_input_dict, beta_val_dict_temp, C_2_input)*vol_2)/vol_3))
         
+            # Because we are only concerned with one nutrient concentration (that being nitrogen)
+            # unlike the multiple ligands and metals we need we can just initiate the nutrient changes once and forego a loop.
+            
         return_list = [dC1dt, dC2dt, dC3dt]
             
             # Because, at least for the moment, the above concentrations of nutrients and ligands are singular values (and are not associated with newly-added metals), 
@@ -409,6 +498,9 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
             L_2_input_dict[L_2_temp[conc_index][0]] = L_2_temp[conc_index][1]
             L_3_input_dict[L_3_temp[conc_index][0]] = L_3_temp[conc_index][1]
             
+        # Note: modifying global dictionaries within a function will modify dictionary, regardless
+        # of whether it was (or even can be) deemed a global variable. 
+        
         return dict(return_list)
         
     def complexation(metal_tot, ligand_tot, beta):
@@ -779,6 +871,8 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
         
     plot_concentrations(title, all_symbols_list, time_axis_array_log10, conc_tracing_dict)
         # Plotting the concentrations and how they change over time. 
+
+    return conc_tracing_dict
             
 
 ### --------------------------------------------------------------------------------
@@ -929,7 +1023,7 @@ transport_model_graphing_ligand_approach = \
                                         ligand_use = True, use_ligand_cycling = True, \
                                             L_1 = 0, L_2 = 0, L_3 = 0, \
                                                 mic_ment_light_leibig = 1, \
-                                                    k_scav = 0.19, ligand_total_val = ligand_conc, beta_val = beta_val_1, copper_toxicity = True, copper_inhibition_threshold = 10**-6.2, \
+                                                    k_scav = 0.19, ligand_total_val = ligand_conc, beta_val = beta_val_1, copper_toxicity = True, copper_inhibition_threshold = 10**-5.7, \
                                                         symb_Cu = 'Cu_II', m_conc_Cu_II_1 = 0, m_conc_Cu_II_2 = 0, m_conc_Cu_II_3 = 0, \
                                                             in1_Cu_II = D_in1, in2_Cu_II = D_in2, alpha_Cu_II = alpha_Cu_II_val, k_scav_Cu_II = 0.19, \
                                                                 beta_val_Cu_II = beta_val_Cu_II_val, R_M_Cu_II = R_Cu_II, K_sat_Cu_II = K_sat_Cu_II_val, \
