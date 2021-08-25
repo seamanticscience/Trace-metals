@@ -67,7 +67,7 @@ lambda_ligand_Fe = 5*10**(-5)/4398
 ## The following functions abstract the process of creating the transport model
 ## (using the ODEs we have generalized to the system).
 
-def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_metal_elements, \
+def create_transport_model(C_1, C_2, C_3, dt, end_time, title, num_metal_elements, \
                            use_metal = False, metal_type = None, M_1 = None, M_2 = None, M_3 = None, \
                                M_in1 = None, M_in2 = None, alpha = None, R_M = None, K_sat_M = None, \
                                    ligand_use = False, use_ligand_cycling = False, \
@@ -84,8 +84,8 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
     -----------
         C_1, C_2, C_3: Initial concentrations in the three boxes (float), 
             quantities in mols per cubic meter.
-        dt_in_years: float, length of time step
-        end_time: int, number of years for which we want to process the simulation
+        dt: float, length of time step
+        end_time: int, number of seconds for which we want to process the simulation (we can input value of years, but must be converted to seconds)
         title: str, title to be given to graph.
         num_metal_elements: Number of elements to be studied/ plotted. Will be useful when handling trace metals. 
         K_sat_M = Saturation constant of metal.
@@ -699,10 +699,6 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
         gamma_dict[metal_name_list[var_index]] = gamma_list[var_index][1]
         lambda_ligand_dict[metal_name_list[var_index]] = lambda_ligand_list[var_index][1]
 
-        
-    ## Initiate Time Variables
-    
-    dt = dt_in_years*60*60*24*365  #Total number of seconds representing a year. 
     
     ## Initiate Variables that will "globally," at least within this function, keep track of 
     ## concentrations of C_1 and C_2 so that these values can be reused for C_3.
@@ -719,19 +715,28 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
     ### arrays depict concentrations of C_1, C_2, and C_3 over the time steps. 
     
     ## Create x-axis array (time)
+
+    # While dt is in terms of seconds because all of our calculations require units of seconds for dt, 
+    # we want 
     
     time_axis_list = [0,]
+    time_axis_list_log10_seconds = [1*10^-10,]
     time_axis_list_log10 = [1*10^-10,]
-    t_temp = dt_in_years
+    t_temp = dt
     
     while t_temp <= end_time:
-        t_temp += dt_in_years
+        t_temp += dt
         time_axis_list.append(t_temp)
-        time_axis_list_log10.append(math.log10(t_temp))
+        time_axis_list_log10_seconds.append(math.log10(t_temp))
+        time_axis_list_log10.append(math.log10(t_temp/(365*24*3600)))
             # At the end of this while loop, we will have a list of all time checkpoints for which
             # we want to calculate the three concentrations. 
     time_axis_array = np.array(time_axis_list)
     time_axis_array_log10 = np.array(time_axis_list_log10)
+    
+    # Convert the logarithmic array into year values such that the log scale is
+    # accurately scaled down.
+    
 
 
     ## Create y-axis concentrations
@@ -876,22 +881,26 @@ def create_transport_model(C_1, C_2, C_3, dt_in_years, end_time, title, num_meta
             
 
 ### --------------------------------------------------------------------------------
-### --------------------------------------------------------------------------------
-### --------------------------------------------------------------------------------
 ### The following section calls the above functions for plotting purposes.
+###-------------------------------------------------------------------------
 
-# -------------------------------------------------------------------
-## Plotting Iron with results similar to Lauderdale 2020
+
+## Establishing Beginning Parameters
+### -------------------------------------------------------------
 
 # Establishing Deposition Rates
 
 D_in1 = (1/0.035)*0.071/(60*60*24*365) # Now it's just rate of deposition of "dust" in g/m2/s
 D_in2 = (1/0.035)*6.46/(60*60*24*365) # Same as above
 
-# D_in1 = 0.071/(60*60*24*365) # Now it's just rate of deposition of "dust" in g/m2/s
-# D_in2 = 6.46/(60*60*24*365) # Same as above
+# Establishing time step and end time values for the following similations; they all have the same such values. 
+
+dt_model = 2.5*24*60*60 # Units of seconds
+end_time_model = 10000*365*24*60*60 # Also units of seconds
+
 # -------------------------------------------------------------------
-# Establishing Quantities Specific to Model Scenario
+# -------------------------------------------------------------------
+## (1) Plotting Iron with results similar to Lauderdale 2020
 
 N_1_to_3 = 30*rho_0*10**(-6)
 
@@ -921,15 +930,15 @@ beta_val_1 = 10**8 # kg/mol, as required by the value earlier.
 # -----
 
 
-transport_model_graphing_ligand_approach = \
-        create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, 0.006849, 10000, \
-                            'Concentrations of Nutrients, Iron, and Ligands over time, \n dt = 2.5 days, ligand concentration = 10**-6, beta = 10**8 (kg per mol) \n Michalis-Menten Model, Leibig Limit Approximation', 9, \
-                                use_metal = True, metal_type = 'Fe', M_1 = 0, M_2 = 0, M_3 = 0, K_sat_M = K_sat_Fe, \
-                                    M_in1 = D_in1, M_in2 = D_in2, alpha = alpha_Fe, R_M = R_Fe, \
-                                        ligand_use = True, use_ligand_cycling = True, \
-                                            L_1 = 0, L_2 = 0, L_3 = 0, \
-                                                mic_ment_light_leibig = 1, \
-                                                    k_scav = 0.19, ligand_total_val = ligand_conc, beta_val = beta_val_1)
+# transport_model_graphing_ligand_approach = \
+#         create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, 0.006849, 10000, \
+#                             'Concentrations of Nutrients, Iron, and Ligands over time, \n dt = 2.5 days, ligand concentration = 10**-6, beta = 10**8 (kg per mol) \n Michalis-Menten Model, Leibig Limit Approximation', 9, \
+#                                 use_metal = True, metal_type = 'Fe', M_1 = 0, M_2 = 0, M_3 = 0, K_sat_M = K_sat_Fe, \
+#                                     M_in1 = D_in1, M_in2 = D_in2, alpha = alpha_Fe, R_M = R_Fe, \
+#                                         ligand_use = True, use_ligand_cycling = True, \
+#                                             L_1 = 0, L_2 = 0, L_3 = 0, \
+#                                                 mic_ment_light_leibig = 1, \
+#                                                     k_scav = 0.19, ligand_total_val = ligand_conc, beta_val = beta_val_1)
 
 # -------------------------------------------------------------------
 # Copper (II): Assume that the surface concentration (i.e. metal and ligands) in the first
@@ -1016,7 +1025,7 @@ lambda_ligand_Cu_II_val = 5*10**(-5)/4398*(0.38/7.5)
 beta_val_Cu_II_val = 10**(8.5)
 
 transport_model_graphing_ligand_approach = \
-        create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, 0.006849, 10000, \
+        create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, dt_model, end_time_model, \
                             'Nutrients, Iron, Copper(II) and Ligands over time, Multi-Ligands \n dt = 2.5 days, ligand concentration = 2*10**-9, beta = 10**8.5 (kg per mol) \n Michalis-Menten Model, Leibig Limit Approximation \n Toxic Copper Threshold: 10**-6.2', 9, \
                                 use_metal = True, metal_type = 'Fe', M_1 = 0, M_2 = 0, M_3 = 0, K_sat_M = K_sat_Fe, \
                                     M_in1 = D_in1, M_in2 = D_in2, alpha = alpha_Fe, R_M = R_Fe, \
