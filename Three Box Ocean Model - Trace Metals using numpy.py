@@ -761,11 +761,13 @@ def create_transport_model(C_1, C_2, C_3, dt, end_time, title, num_metal_element
     
     conc_tracing_dict = {}
     for element_name in init_concs.keys():
-        conc_tracing_dict[element_name] = [init_concs[element_name],]
+        conc_tracing_dict[element_name] = np.empty(len(time_axis_array_log10))
+        conc_tracing_dict[element_name][0] = init_concs[element_name]
             # The above for-loop initiates this sort of dictionary with mutable lists as the value. 
 
-    for t_val in time_axis_array[1:]:
-        temp_dict = dtotal_dt(conc_tracing_dict['C_1'][-1], conc_tracing_dict['C_2'][-1], conc_tracing_dict['C_3'][-1], \
+    
+    for t_val_index in range(len(time_axis_array[1:])):
+        temp_dict = dtotal_dt(conc_tracing_dict['C_1'][t_val_index], conc_tracing_dict['C_2'][t_val_index], conc_tracing_dict['C_3'][t_val_index], \
                   init_L_1_dict, init_L_2_dict, init_L_3_dict, \
                   metal_name_list, \
                   gamma_dict, lambda_ligand_dict, \
@@ -778,10 +780,16 @@ def create_transport_model(C_1, C_2, C_3, dt, end_time, title, num_metal_element
         # raise NotImplementedError
         
         for element_name in init_concs.keys():
-            conc_tracing_dict[element_name].append(temp_dict[element_name])
+            conc_tracing_dict[element_name][t_val_index + 1] = temp_dict[element_name]
                 # for each key in our init_concs (the same keys present in our conc_tracing_dict),
                 # find the value associated with that key (which is a singular list), and to that list append
                 # the new concentration value given by the temp_dict with that very same key.
+        
+        # if t_val_index > 3:
+        #     print(temp_dict)
+        #     for concu in init_concs.keys():
+        #         print(conc_tracing_dict[concu][3])
+        #     raise NotImplementedError
         
     def plot_concentrations(title, metal_symbol_list_temp, time_axis_array_temp, conc_dict_temp):
         """
