@@ -69,7 +69,7 @@ lambda_ligand_Fe = 5*10**(-5)/4398
 
 def create_transport_model(C_1, C_2, C_3, dt, end_time, title, num_metal_elements, \
                            use_metal = False, metal_type = None, M_1 = None, M_2 = None, M_3 = None, \
-                               M_in1 = None, M_in2 = None, alpha = None, R_M = None, K_sat_M = None, \
+                               M_in1 = None, M_in2 = None, M_in3 = None, alpha = None, R_M = None, K_sat_M = None, \
                                    ligand_use = False, use_ligand_cycling = False, \
                                        gamma = gamma_Fe, lambda_ligand = lambda_ligand_Fe, \
                                            L_1 = None, L_2 = None, L_3 = None, \
@@ -92,7 +92,7 @@ def create_transport_model(C_1, C_2, C_3, dt, end_time, title, num_metal_element
         use_metal: boolean, true if we want to measure concentration of metal.
         M_1, M_2, M_3: Initial Concentrations of metal in the three boxes (float)
             in mols per cubic meter, this was iron in the previous model. 
-        M_in1, M_in2: Amount of metal inputted to respective box. Value in mols of metal per second for
+        M_in1, M_in2, M_in3: Amount of metal inputted to respective box. Value in mols of metal per second for
             consistency.
         alpha: fraction of metal inputted that is usable for purposes. 
         metal_type: string, designates type of metal.
@@ -264,7 +264,7 @@ def create_transport_model(C_1, C_2, C_3, dt, end_time, title, num_metal_element
                   conc_name_list_temp, \
                   gamma_temp_dict, lambda_ligand_temp_dict, \
                   metal_1_dict_temp, metal_2_dict_temp, metal_3_dict_temp, \
-                  K_sat_M_list_temp, alpha_dict_temp, M_in1_dict_temp, M_in2_dict_temp, k_scav_dict_temp, R_M_dict_temp, \
+                  K_sat_M_list_temp, alpha_dict_temp, M_in1_dict_temp, M_in2_dict_temp, M_in3_dict_temp, k_scav_dict_temp, R_M_dict_temp, \
                   beta_val_dict_temp, dt_temp):
         """
         Takes all initial concentrations and returns all updated values dependent on said
@@ -323,7 +323,7 @@ def create_transport_model(C_1, C_2, C_3, dt, end_time, title, num_metal_element
             return M_2_input + dt_temp*((psi*(M_1_input - M_2_input) + k_12*(M_1_input - M_2_input) + k_32*(M_3_input - M_2_input))/vol_2 + \
                     alpha_temp*M_in2_temp/dz_2 - k_scav_temp*complexation(M_2_input, L_2_input, beta_val_temp)/(60*60*24*365) - R_M_temp*export_2(metal_2_dict_temp, K_sat_M_list_temp, L_2_input_dict, beta_val_dict_temp, C_2_input))
 
-        def dM3dt(M_1_input, M_2_input, M_3_input, alpha_temp, k_scav_temp, R_M_temp, beta_val_temp, L_3_input):
+        def dM3dt(M_1_input, M_2_input, M_3_input, alpha_temp, M_in3_temp, k_scav_temp, R_M_temp, beta_val_temp, L_3_input):
             """
             Computes change in metal concentration after one time step. 
 
@@ -339,7 +339,7 @@ def create_transport_model(C_1, C_2, C_3, dt, end_time, title, num_metal_element
 
             """
             return M_3_input + dt_temp*((psi*(M_2_input - M_3_input) + k_23*(M_2_input - M_3_input) + k_13*(M_1_input - M_3_input))/vol_3 \
-                - k_scav_temp*complexation(M_3_input, L_3_input, beta_val_temp)/(60*60*24*365) \
+                + alpha_temp*M_in3/dz_3 - k_scav_temp*complexation(M_3_input, L_3_input, beta_val_temp)/(60*60*24*365) \
                 + R_M_temp*(export_1(metal_1_dict_temp, K_sat_M_list_temp, L_1_input_dict, beta_val_dict_temp, C_1_input)*vol_1 + export_2(metal_2_dict_temp, K_sat_M_list_temp, L_2_input_dict, beta_val_dict_temp, C_2_input)*vol_2)/vol_3)
         
         def dL1dt(L_1_input, L_2_input, L_3_input, gamma_temp, lambda_ligand_temp):
@@ -443,7 +443,7 @@ def create_transport_model(C_1, C_2, C_3, dt, end_time, title, num_metal_element
             m_2_temp.append(temp_tuple_2)
             
             temp_tuple_3 = (f'{metal_conc}_3', dM3dt(metal_1_dict_temp[f'{metal_conc}_1'], metal_2_dict_temp[f'{metal_conc}_2'], metal_3_dict_temp[f'{metal_conc}_3'], \
-                                                         alpha_dict_temp[metal_conc], k_scav_dict_temp[metal_conc], \
+                                                         alpha_dict_temp[metal_conc], M_in3_dict_temp[metal_conc], k_scav_dict_temp[metal_conc], \
                                                              R_M_dict_temp[metal_conc], beta_val_dict_temp[metal_conc], [L_3_input_dict['L_3_Fe'] if len(L_3_input_dict) == 1 else L_3_input_dict[f'L_3_{metal_conc}']][0]))
             return_list.append(temp_tuple_3)
             m_3_temp.append(temp_tuple_3)
@@ -538,6 +538,7 @@ def create_transport_model(C_1, C_2, C_3, dt, end_time, title, num_metal_element
     metal_3_list = [('m_conc_Fe_3', M_3), ]
     metal_in_1_list = [('in1_Fe', M_in1), ]
     metal_in_2_list = [('in2_Fe', M_in2), ]
+    metal_in_3_list = [('in3_Fe', M_in3), ]
     alpha_list = [('alpha_Fe', alpha), ]
     k_scav_list = [('k_scav_Fe', k_scav), ]
     beta_val_list = [('beta_val_Fe', beta_val), ]
@@ -565,6 +566,8 @@ def create_transport_model(C_1, C_2, C_3, dt, end_time, title, num_metal_element
             metal_in_1_list.append(parameter_val)
         elif parameter_val[0].startswith('in2'):
             metal_in_2_list.append(parameter_val)
+        elif parameter_val[0].startswith('in3'):
+            metal_in_3_list.append(parameter_val)
         elif parameter_val[0].startswith('alpha'):
             alpha_list.append(parameter_val)
         elif parameter_val[0].startswith('k_scav'):
@@ -598,6 +601,7 @@ def create_transport_model(C_1, C_2, C_3, dt, end_time, title, num_metal_element
     metal_3_list.sort()
     metal_in_1_list.sort()
     metal_in_2_list.sort()
+    metal_in_3_list.sort()
     alpha_list.sort()
     k_scav_list.sort()
     beta_val_list.sort()
@@ -680,6 +684,7 @@ def create_transport_model(C_1, C_2, C_3, dt, end_time, title, num_metal_element
     
     metal_in1_dict = {}
     metal_in2_dict = {}
+    metal_in3_dict = {}
     alpha_dict = {}
     k_scav_dict = {}
     beta_val_dict = {}
@@ -692,6 +697,7 @@ def create_transport_model(C_1, C_2, C_3, dt, end_time, title, num_metal_element
     for var_index in range(len(metal_name_list)):
         metal_in1_dict[metal_name_list[var_index]] = metal_in_1_list[var_index][1]
         metal_in2_dict[metal_name_list[var_index]] = metal_in_2_list[var_index][1]
+        metal_in3_dict[metal_name_list[var_index]] = metal_in_3_list[var_index][1]
         alpha_dict[metal_name_list[var_index]] = alpha_list[var_index][1]
         k_scav_dict[metal_name_list[var_index]] = k_scav_list[var_index][1]
         beta_val_dict[metal_name_list[var_index]] = beta_val_list[var_index][1]
@@ -770,7 +776,7 @@ def create_transport_model(C_1, C_2, C_3, dt, end_time, title, num_metal_element
                   metal_name_list, \
                   gamma_dict, lambda_ligand_dict, \
                   init_concs_metal_1, init_concs_metal_2, init_concs_metal_3, \
-                  K_sat_M_list, alpha_dict, metal_in1_dict, metal_in2_dict, k_scav_dict, R_M_dict, \
+                  K_sat_M_list, alpha_dict, metal_in1_dict, metal_in2_dict, metal_in3_dict, k_scav_dict, R_M_dict, \
                   beta_val_dict, dt)
             
         # print(temp_dict)
@@ -892,6 +898,13 @@ def create_transport_model(C_1, C_2, C_3, dt, end_time, title, num_metal_element
 
 D_in1 = 0.071/(60*60*24*365) # Now it's just rate of deposition of "dust" in g/m2/s
 D_in2 = 6.46/(60*60*24*365) # Same as above
+D_in3 = 8.00*55.845*10**9/(60*60*24*365*dy_3*dz_3) # Multiply GMol quantity by molar mass of
+    # iron to get grams of iron per year; from here the same unit conversions as
+    # before apply. 
+# D_in3 = 6.46/(60*60*24*365) # Recently put in
+### Input D_in3 and put ode in deepwater box. 2% solubility, 10 gigamol/year
+### Copper source hydrotherman
+
 
 # Establishing time step and end time values for the following similations; they all have the same such values. 
 
@@ -930,15 +943,15 @@ beta_val_1 = 10**8 # kg/mol, as required by the value earlier.
 # -----
 
 
-transport_model_graphing_ligand_approach = \
-        create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, dt_model, end_time_model, \
-                            'Concentrations of Nutrients, Iron, and Ligands over time, \n dt = 2.5 days, ligand concentration = 10**-6, beta = 10**8 (kg per mol) \n Michalis-Menten Model, Leibig Limit Approximation', 9, \
-                                use_metal = True, metal_type = 'Fe', M_1 = 0, M_2 = 0, M_3 = 0, K_sat_M = K_sat_Fe, \
-                                    M_in1 = D_in1, M_in2 = D_in2, alpha = alpha_Fe, R_M = R_Fe, \
-                                        ligand_use = True, use_ligand_cycling = True, \
-                                            L_1 = 0, L_2 = 0, L_3 = 0, \
-                                                mic_ment_light_leibig = 1, \
-                                                    k_scav = 0.19, ligand_total_val = ligand_conc, beta_val = beta_val_1)
+# transport_model_graphing_ligand_approach = \
+#         create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, dt_model, end_time_model, \
+#                             'Concentrations of Nutrients, Iron, and Ligands over time, \n dt = 2.5 days, ligand concentration = 10**-6, beta = 10**8 (kg per mol) \n Michalis-Menten Model, Leibig Limit Approximation', 9, \
+#                                 use_metal = True, metal_type = 'Fe', M_1 = 0, M_2 = 0, M_3 = 0, K_sat_M = K_sat_Fe, \
+#                                     M_in1 = D_in1, M_in2 = D_in2, alpha = alpha_Fe, R_M = R_Fe, \
+#                                         ligand_use = True, use_ligand_cycling = True, \
+#                                             L_1 = 0, L_2 = 0, L_3 = 0, \
+#                                                 mic_ment_light_leibig = 1, \
+#                                                     k_scav = 0.19, ligand_total_val = ligand_conc, beta_val = beta_val_1)
 
 # -------------------------------------------------------------------
 # Copper (II): Assume that the surface concentration (i.e. metal and ligands) in the first
@@ -976,7 +989,10 @@ beta_val_Cu_II = 10**(8.5)
 N_1_to_3 = 30*rho_0*10**(-6)
 Cu_1_2 = (10*10**-9)*(1000) # Converting value from mol/liter to mol/m3
 #1
+
+alpha_Fe = (0.035*0.01)/55.845 #Fe dust solubility
 alpha_Cu_II_val = (0.00035*0.5)/(63.546*0.035)
+
 # R_Cu_II = R_Fe*(0.38/7.5) # Using elemental ratio.
 R_Cu_II = (0.38*10**-3)*(1/16) #unitless, multiplied by (1/16) to convert from Fe:P ratio to Fe:N from Ho and Quigg
 K_sat_Cu_II_val = K_sat_Fe*(0.38/7.5) # Using elemental ratios to convert between iron and copper. 
@@ -1024,20 +1040,21 @@ lambda_ligand_Cu_II_val = 5*10**(-5)/4398*(0.38/7.5)
 
 beta_val_Cu_II_val = 10**(8.5)
 
-# transport_model_graphing_ligand_approach = \
-#         create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, dt_model, end_time_model, \
-#                             'Nutrients, Iron, Copper(II) and Ligands over time, Multi-Ligands \n dt = 2.5 days, ligand concentration = 2*10**-9, beta = 10**8.5 (kg per mol) \n Michalis-Menten Model, Leibig Limit Approximation \n Toxic Copper Threshold: 10**-6.2', 9, \
-#                                 use_metal = True, metal_type = 'Fe', M_1 = 0, M_2 = 0, M_3 = 0, K_sat_M = K_sat_Fe, \
-#                                     M_in1 = D_in1, M_in2 = D_in2, alpha = alpha_Fe, R_M = R_Fe, \
-#                                         ligand_use = True, use_ligand_cycling = True, \
-#                                             L_1 = 0, L_2 = 0, L_3 = 0, \
-#                                                 mic_ment_light_leibig = 1, \
-#                                                     k_scav = 0.19, ligand_total_val = ligand_conc, beta_val = beta_val_1, copper_toxicity = True, copper_inhibition_threshold = 10**-5.7, \
-#                                                         symb_Cu = 'Cu_II', m_conc_Cu_II_1 = 0, m_conc_Cu_II_2 = 0, m_conc_Cu_II_3 = 0, \
-#                                                             in1_Cu_II = D_in1, in2_Cu_II = D_in2, alpha_Cu_II = alpha_Cu_II_val, k_scav_Cu_II = 0.19, \
-#                                                                 beta_val_Cu_II = beta_val_Cu_II_val, R_M_Cu_II = R_Cu_II, K_sat_Cu_II = K_sat_Cu_II_val, \
-#                                                                     ligand_use_Cu_II = True, use_ligand_cycling_Cu_II = True, \
-#                                                                         gamma_Cu_II = gamma_Cu_II_val, lambda_ligand_Cu_II = lambda_ligand_Cu_II_val, \
-#                                                                             L_1_Cu_II = 0, L_2_Cu_II = 0, L_3_Cu_II = 0)
+transport_model_graphing_ligand_approach = \
+        create_transport_model(N_1_to_3, N_1_to_3, N_1_to_3, dt_model, end_time_model, \
+                            'Nutrients, Iron, Copper(II) and Ligands over time, Multi-Ligands \n dt = 2.5 days, ligand concentration = 2*10**-9, beta = 10**8.5 (kg per mol) \n Michalis-Menten Model, Leibig Limit Approximation \n Toxic Copper Threshold: 10**-6.2', 9, \
+                                use_metal = True, metal_type = 'Fe', M_1 = 0, M_2 = 0, M_3 = 0, K_sat_M = K_sat_Fe, \
+                                    M_in1 = D_in1, M_in2 = D_in2, M_in3 = D_in3, alpha = alpha_Fe, R_M = R_Fe, \
+                                        ligand_use = True, use_ligand_cycling = True, \
+                                            L_1 = 0, L_2 = 0, L_3 = 0, \
+                                                mic_ment_light_leibig = 1, \
+                                                    k_scav = 0.19, ligand_total_val = ligand_conc, beta_val = beta_val_1, copper_toxicity = True, copper_inhibition_threshold = 10**-4.7, \
+                                                        symb_Cu = 'Cu_II', m_conc_Cu_II_1 = 0, m_conc_Cu_II_2 = 0, m_conc_Cu_II_3 = 0, \
+                                                            in1_Cu_II = D_in1, in2_Cu_II = D_in2, in3_Cu_II = D_in3, alpha_Cu_II = alpha_Cu_II_val, k_scav_Cu_II = 0.19, \
+                                                                beta_val_Cu_II = beta_val_Cu_II_val, R_M_Cu_II = R_Cu_II, K_sat_Cu_II = K_sat_Cu_II_val, \
+                                                                    ligand_use_Cu_II = True, use_ligand_cycling_Cu_II = True, \
+                                                                        gamma_Cu_II = gamma_Cu_II_val, lambda_ligand_Cu_II = lambda_ligand_Cu_II_val, \
+                                                                            L_1_Cu_II = 0, L_2_Cu_II = 0, L_3_Cu_II = 0)
             
-
+#-4.75 tried and done
+# Copper concentration
